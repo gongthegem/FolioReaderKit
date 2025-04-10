@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
     name: "FolioReaderKit",
     platforms: [
-        .iOS(15.5)
+	.iOS("15.5")
     ],
     products: [
         // This makes the module available to your projects as "FolioReaderKit"
