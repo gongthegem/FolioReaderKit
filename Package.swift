@@ -26,7 +26,7 @@ let package = Package(
         .target(
             name: "FolioReaderKit",
             dependencies: [
-		.product(name: "SSZipArchive", package: "ZipArchive"),
+		.product(name: "ZipArchive", package: "ZipArchive"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 "SwiftSoup",
 		"AEXML"
