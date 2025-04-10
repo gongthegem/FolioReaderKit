@@ -18,13 +18,15 @@ let package = Package(
         // These examples assume you need ZIPFoundation and SwiftSoup:
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.2"),
-        .package(url: "https://github.com/tadija/AEXML.git", from: "4.6.0")
+        .package(url: "https://github.com/tadija/AEXML.git", from: "4.6.0"),
+        .package(url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0")
     ],
     targets: [
         // Define the main target for FolioReaderKit.
         .target(
             name: "FolioReaderKit",
             dependencies: [
+		.product(name: "ZipArchive", package: "ZipArchive"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 "SwiftSoup",
 		"AEXML"
