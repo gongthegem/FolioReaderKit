@@ -1,6 +1,9 @@
 // swift-tools-version:5.8
 import PackageDescription
 
+
+
+
 let package = Package(
     name: "FolioReaderKit",
     platforms: [
@@ -14,7 +17,8 @@ let package = Package(
         // List any external dependencies here.
         // These examples assume you need ZIPFoundation and SwiftSoup:
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
-        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.2")
+        .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.2"),
+        .package(url: "https://github.com/tadija/AEXML.git", from: "4.6.0")
     ],
     targets: [
         // Define the main target for FolioReaderKit.
@@ -22,7 +26,9 @@ let package = Package(
             name: "FolioReaderKit",
             dependencies: [
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
-                "SwiftSoup"
+                "SwiftSoup",
+		"AEXML"
+
             ],
             // Update the path if your source files are not in a folder named "FolioReaderKit"
             path: "Source"
