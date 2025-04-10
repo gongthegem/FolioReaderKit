@@ -25,13 +25,13 @@ let package = Package(
                 "SwiftSoup"
             ],
             // Update the path if your source files are not in a folder named "FolioReaderKit"
-            path: "FolioReaderKit"
+            path: "FolioReaderKit/Source"
         ),
         // Define the tests target if you have tests.
         .testTarget(
             name: "FolioReaderKitTests",
             dependencies: ["FolioReaderKit"],
-            path: "Tests"
+            path: "FolioReaderKitTests"
         )
     ]
 )
