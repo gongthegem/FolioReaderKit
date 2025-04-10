@@ -25,7 +25,7 @@ let package = Package(
                 "SwiftSoup"
             ],
             // Update the path if your source files are not in a folder named "FolioReaderKit"
-            path: "FolioReaderKit/Source"
+            path: "Source"
         ),
         // Define the tests target if you have tests.
         .testTarget(
