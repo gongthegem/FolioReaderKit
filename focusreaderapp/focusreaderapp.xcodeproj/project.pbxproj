@@ -81,7 +81,6 @@
 				9FDCE1A22DC2CD79005E41F3 /* focusreaderapp.xcodeproj */,
 				9FDCE1A32DC2CD79005E41F3 /* LICENSE */,
 				9FDCE1A42DC2CD79005E41F3 /* Package.resolved */,
-				9FDCE1A52DC2CD79005E41F3 /* Package.swift */,
 				9FDCE1A62DC2CD79005E41F3 /* README.md */,
 				9FDCE1A72DC2CD79005E41F3 /* refactoring_plan.md */,
 				9FDCE1222DC2CD2A005E41F3 /* Products */,
@@ -251,7 +250,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9FDCE1BE2DC2CEB8005E41F3 /* Package.swift in Sources */,
 				9FDCE1AA2DC2CE97005E41F3 /* Book.swift in Sources */,
 				9FDCE1AB2DC2CE97005E41F3 /* Chapter.swift in Sources */,
 				9FDCE1AC2DC2CE97005E41F3 /* ContentProcessing.swift in Sources */,

@@ -12,33 +12,6 @@ struct FocusReaderApp: App {
     }
 }
 
-struct ContentView: View {
-    @EnvironmentObject var bookViewModel: BookViewModel
-    
-    @StateObject private var readingContentViewModel = DependencyContainer.shared.makeReadingContentViewModel()
-    @StateObject private var speedReadingViewModel: SpeedReadingViewModel
-    
-    init() {
-        let readingVM = DependencyContainer.shared.makeReadingContentViewModel()
-        let speedVM = DependencyContainer.shared.makeSpeedReadingViewModel(readingContentVM: readingVM)
-        
-        _speedReadingViewModel = StateObject(wrappedValue: speedVM)
-    }
-    
-    var body: some View {
-        if let currentBook = bookViewModel.currentBook {
-            ReaderContainerView(
-                bookViewModel: bookViewModel,
-                readingContentVM: readingContentViewModel,
-                speedReadingVM: speedReadingViewModel
-            )
-        } else {
-            LibraryView()
-                .environmentObject(bookViewModel)
-        }
-    }
-}
-
 struct LibraryView: View {
     @EnvironmentObject var bookViewModel: BookViewModel
     @State private var isImporting = false

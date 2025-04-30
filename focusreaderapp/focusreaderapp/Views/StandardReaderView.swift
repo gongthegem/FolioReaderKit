@@ -186,8 +186,8 @@ struct BookWebView: UIViewRepresentable {
                let text = data["text"] as? String {
                 
                 // Find the sentence index by matching text
-                if let processed = text.trimmingCharacters(in: .whitespacesAndNewlines),
-                   let sentenceIndex = findSentenceIndex(for: processed) {
+                let processed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let sentenceIndex = findSentenceIndex(for: processed) {
                     DispatchQueue.main.async {
                         self.parent.onSentenceTap(sentenceIndex)
                     }

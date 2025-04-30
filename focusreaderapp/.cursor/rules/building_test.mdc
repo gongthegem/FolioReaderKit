@@ -3,11 +3,10 @@ description:
 globs: 
 alwaysApply: false
 ---
-
 1. Build the project
     (1) **Quit Xcode** : pkill Xcode
     (2) Wipe DerivedData: rm -rf ~/Library/Developer/Xcode/DerivedData/*
-    (3) Build & Log: xcodebuild -scheme ADHDReader -destination 'platform=iOS Simulator,name=iPhone 16 Pro' clean build 2>&1 | tee ~/Desktop/build.log
+    (3) Build & Log: xcodebuild -scheme focusreaderapp -destination 'platform=iOS Simulator,name=iPhone 16 Pro' clean build 2>&1 | tee ~/Desktop/build.log
     
     (4) find first error: grep -n -m1 "error:" ~/Desktop/build.log
     (5) Open & Fix

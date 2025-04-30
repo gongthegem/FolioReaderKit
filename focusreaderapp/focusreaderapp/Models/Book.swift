@@ -6,7 +6,7 @@ struct Book: Identifiable, Codable {
     var title: String
     var author: String
     var coverImagePath: String?
-    var chapters: [Chapter]
+    var chapters: [Chapter] = []
     var metadata: BookMetadata
     var filePath: String
     var lastReadPosition: ReadingPosition?
