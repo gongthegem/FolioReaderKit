@@ -1,0 +1,130 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Root‑Cause Analysis Plan  
+
+---
+## 1. Reproduce & Capture
+
+```bash
+# Confirm deterministic failure 5×
+for i in {1..5}; do ./run.sh; done
+
+# Capture full output to log
+./run.sh 2>&1 | tee full.log
+
+⸻
+
+2. Record Environment
+
+sw_vers                     # macOS version
+xcodebuild -version         # Xcode version
+swift --version             # Swift toolchain version
+
+Append these to the end of full.log if you need to share context.
+
+⸻
+
+3. Locate the First Error
+
+# Get the first “error” or “fatal” line
+ERROR_LINE=$(grep -n -m1 -E "(error|fatal|Exception)" full.log)
+echo "Found at → $ERROR_LINE"
+
+This yields path/to/File.swift:123: error: …
+
+⸻
+
+4. Inspect & Backup
+
+FILE=$(cut -d: -f1 <<<"$ERROR_LINE")
+LINE=$(cut -d: -f2 <<<"$ERROR_LINE")
+cp "$FILE" "$FILE".bak             # backup before editing
+vim +$LINE "$FILE"                # open in terminal editor
+
+Read ~5 lines above/below to understand context.
+
+⸻
+
+5. Isolate by Halves
+	1.	In vim, locate the function/block containing the error.
+	2.	Comment out the bottom half of that block:
+
+:<start>,<mid>s/^/\/\/ /
+
+
+	3.	Save & quit: :wq
+
+⸻
+
+6. Rerun & Narrow
+
+./run.sh
+
+	•	If the error is gone, it’s in the commented half.
+	•	If it remains, it’s in the top half.
+
+Repeat steps 5–6 on the faulty half until you narrow down to ~1 line.
+
+⸻
+
+7. Add a Quick Print
+
+# Reopen at suspect line
+vim +$LINE "$FILE"
+
+# Above the suspect line, insert:
+print("CHECK:", variable)
+
+# Save & quit
+: wq
+
+# Rerun and grep for your print
+./run.sh 2>&1 | tee debug.log
+grep "CHECK:" debug.log
+
+Observe variable values → confirms your understanding of the failure.
+
+⸻
+
+8. Form & Test One‑Line Hypothesis
+
+# Document your hypothesis
+echo "HYPOTHESIS: …" > hypothesis.txt
+echo "TEST: one-line change at $FILE:$LINE" >> hypothesis.txt
+
+	1.	Apply the one-line change (in vim or with sed).
+	2.	Run ./run.sh → expect pass.
+	3.	Revert to backup:
+
+mv "$FILE".bak "$FILE"
+./run.sh  # expect failure again
+
+
+
+Only when both “pass with change” and “fail without” occur have you proven causality.
+
+⸻
+
+9. Implement Permanent Fix
+
+vim "$FILE"      # apply the actual minimal fix
+./run.sh         # confirm it now passes consistently
+
+
+
+⸻
+
+10. Add a Local Guard
+
+# Ensure future runs catch regression
+echo './run.sh || (echo "❌ Regression detected"; exit 1)' >> rebuild.sh
+chmod +x rebuild.sh
+
+Now ./rebuild.sh will fail loudly if this bug ever reappears.
+
+⸻
+
+Keep this cheat‑sheet beside you—every step is a clear terminal command with a binary pass/fail outcome.iding you to the true root cause.

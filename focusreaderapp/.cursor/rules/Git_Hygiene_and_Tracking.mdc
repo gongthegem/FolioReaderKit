@@ -1,0 +1,50 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+### Core Principles:
+*   **Track Everything Necessary:** Source code, project files, configuration, and custom rules belong in Git.
+*   **Ignore Transients:** Build artifacts, logs, user-specific settings, and dependencies managed by package managers should be ignored.
+*   **Commit Often, Clearly:** Save progress frequently with meaningful messages.
+*   **Know Your State:** Always check `git status` before major Git operations.
+
+### Rules:
+
+1.  **Project Initialization & `.gitignore`:**
+    *   Initialize Git at the project root (`git init`).
+    *   **Crucial:** Create a comprehensive `.gitignore` *immediately*. Use standard templates for your language/platform (e.g., Swift/Xcode) and add project-specific ignores:
+        *   Build artifacts (`.build/`, `DerivedData/`)
+        *   User-specific IDE settings (`xcuserdata/`, `.idea/`, `.vscode/`)
+        *   Dependency directories if managed externally (`Pods/`, `Carthage/`, sometimes `node_modules/` - though often checked in for lockfile consistency in some ecosystems)
+        *   Log files (`*.log`)
+        *   Environment variables (`.env*`)
+        *   OS files (`.DS_Store`)
+    *   Commit the initial `.gitignore` immediately.
+
+2.  **Tracking Essential Files:**
+    *   Explicitly use `git add <file_or_directory>` to track all source code, assets, project files (`.xcodeproj`, `Package.swift`), configuration files, and custom tooling/rules (like `.cursor/rules`).
+    *   **Routine Check:** Regularly run `git status` to find untracked files. If an untracked file is necessary for the project, `git add` it immediately. If it should be ignored, add it to `.gitignore` and commit the change.
+
+3.  **Committing Changes:**
+    *   Commit frequently after completing small, logical units of work (e.g., fixing a specific bug, implementing a small feature, resolving a build error).
+    *   Write clear commit messages explaining *what* changed and *why*.
+    *   Before committing, review your staged changes (`git diff --staged` or IDE tools).
+
+4.  **Branching, Checking Out, Pulling & Resetting:**
+    *   **MANDATORY:** Before `git checkout`, `git pull`, `git merge`, `git rebase`, or `git reset`, **ALWAYS** run `git status` first.
+    *   Address any output from `git status`:
+        *   **Modified Files:** Commit them or stash them (`git stash push`).
+        *   **Untracked Files:**
+            *   If they are essential, `git add` and commit them.
+            *   If they should be ignored, add them to `.gitignore` and commit the `.gitignore` change.
+            *   If they are temporary/local work you don't want to commit yet, use `git stash push -u` (the `-u` includes untracked files). Remember to manage your stash later (`git stash list`, `git stash pop/apply/drop`).
+    *   Avoid using `git reset --hard` unless you are *certain* you want to discard local changes *and* understand which commit you are resetting to. Prefer `stash` or committing.
+    *   Be cautious with force-pushing (`git push --force` or `git push --force-with-lease`). Only do this if you are sure you want to overwrite the remote history and understand the implications for collaborators.
+
+5.  **Submodule Management:**
+    *   If incorporating another repository (like `swift-log` in our case), use `git submodule add <url> <path>` instead of just cloning it inside.
+    *   If a dependency is managed by a package manager (like Swift Package Manager placing checkouts in `.build/checkouts/`), ensure the parent directory (`.build/`) is in `.gitignore`. Do not manually `git add` files within these managed directories.
+
+6.  **Recovery:**
+    *   If you suspect you've lost commits or are in a strange state (like detached HEAD), use `git reflog`. This command shows a history of where HEAD has been, allowing you to find commit hashes even if they aren't referenced by a branch anymore. You can often recover using `git checkout <commit_hash>` or `git cherry-pick <commit_hash>`.

@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: general workflow in executing a request
+globs: 
+alwaysApply: false
+---
+
+# Development Workflow
+
+## Task Breakdown and Tracking
+1. when completed a task, mark it as completed in @task-tracker.mdc
+2. when receiving a new request, break it down to minimal actionable points and add to @task-tracker.mdc
+
+## Task Progression
+1. Always work on one task at a time from the breakdown
+2. Follow the dependency order in the task list - don't implement features that depend on unfinished components
+3. Complete core EPUB handling before focus reading mode
+4. Implement basic functionality before adding customization options
+
+## Implementation Approach
+1. Start with minimal working implementation (MVP)
+2. Test each feature independently before integration
+3. Refactor and optimize only after basic functionality works
+4. Document public APIs as you develop them
+5. Regularly check if implementation matches project requirements
+
+## Progress Tracking
+1. Mark completed tasks in your project management system
+2. Maintain a TODO.md file at project root with current status
+3. Use code comments with TODO, FIXME, NOTE for in-code tracking
+4. Update README.md with completed features 
+
+**Best practices**
+before excuting a code change, follow the following steps:
+
+1. Clean up current code base first
+   - check duplicates
+   - check syntax errors
+   - delete obsolete and redundant code sections or files
+
+2. Make changes for any requirements as minimal as possible
+   - check all the current codes, see if can modify first
+   - if cannot modity or integrate, then add new file or fodlers
+   - TRY BEST DO NOT influence anyother existing working functionalities
+    
+
+
+

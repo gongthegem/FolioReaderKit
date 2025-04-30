@@ -1,0 +1,178 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: break down and track current and future tasks on the list
+globs: 
+alwaysApply: false
+---
+
+# Task Tracker
+
+## Speed Reading Mode Issues
+
+**Summary**: Our investigation has identified several critical issues with the speed reading mode:
+
+1. **DOM Processing Issues**: 
+   - The sentence tokenization process is fragile and sometimes fails to properly identify and wrap sentences
+   - The JavaScript code responsible for DOM manipulation runs into timing issues with document.ready events
+   - Sentence spans are sometimes not correctly indexed or accessible to highlighting functions
+
+2. **Highlighting Mechanism Issues**:
+   - The CSS styles for highlighting sentences aren't being consistently applied
+   - Classes are not properly being added/removed during navigation 
+   - Highlight color settings from SpeedReadingSettings are not consistently applied to the DOM
+
+3. **WebView Configuration Issues**:
+   - The JavaScript message handlers needed for communication aren't correctly registered in all cases
+   - Some WebView content fails to load or fully process DOM elements
+   - WebView content injection sometimes causes rendering issues
+
+4. **User Interface Issues**:
+   - Navigation controls aren't consistently visible
+   - Reading progress isn't correctly tracked or displayed
+   - Transitions between reading modes are unstable
+
+### Current Status
+
+We've implemented several significant fixes to address these issues:
+
+- [x] Enhanced JavaScript error handling and debug logging in `BaseSpeedReadingWebView.swift`
+- [x] Added DOM inspection tools in `InlineSpeedReadingWebView.swift` to diagnose highlighting issues
+- [x] Improved the content loading process in `ContentPipeline.swift` with better DOM manipulation
+- [x] Added robust fallback mechanisms for highlighting when primary methods fail
+- [x] Created more accessible debug and logging functionality to track issues
+- [x] Enhanced styling with !important flags to ensure proper highlighting
+- [x] Unified WebView implementation for both normal and speed reading modes
+
+### Remaining Tasks
+
+- [ ] Test the existing fixes thoroughly to ensure they resolve the core issues
+- [ ] Implement proper usage of SpeedReadingSettings.highlightColor throughout the JavaScript code
+- [ ] Create a complete SpeedReadingView implementation that correctly integrates all components
+- [ ] Add comprehensive error recovery mechanisms to handle edge cases
+- [ ] Implement systematic testing procedures for the speed reading functionality
+- [ ] Enhance documentation for the speed reading components to improve maintainability
+
+### Debug Tools
+
+- Triple tap anywhere in speed reading mode to open the debug console
+- The console logs provide details about:
+  - DOM processing stages
+  - Highlight attempts and failures
+  - Content loading and parsing
+  - JavaScript errors and WebView navigation events
+
+### Current Problems
+- [ ] Page is frozen - no interactivity
+- [ ] Highlighting not working - sentences aren't highlighted
+- [ ] Navigation buttons not functional
+- [ ] Content layout different from normal reading mode
+
+### Breakdown of Tasks
+
+#### 1. Debug JavaScript Execution
+- [x] Check JavaScript console errors in WebView (added comprehensive logging)
+- [x] Fix escape sequences in JavaScript strings (replaced template literals with concatenation)
+- [x] Add error handling to JavaScript functions (added try/catch blocks)
+- [x] Ensure DOM content loaded event fires correctly (added readyState check and multiple event handlers)
+- [x] Improve debugging with console.log messages (added extensive logging)
+- [ ] Improve accessibility features
+
+#### 2. Fix Content Highlighting
+- [x] Strengthen CSS styles with !important flag to override any conflicting styles
+- [x] Debug sentence tokenization process (improved text nodes traversal)
+- [x] Verify sentence spans are correctly created (added logging and verification)
+- [x] Wrap content in container div for better structure (added content wrapper div)
+- [x] Fix highlighting script execution timing with setTimeout (implemented proper timing checks)
+- [x] Make highlighting more visible with enhanced styles (added borders and visual markers)
+- [x] Create fallback highlighting method (added direct DOM manipulation fallback)
+- [x] Fix window scope issue by adding global functions (explicitly defined on window object)
+
+#### 3. Fix Navigation Controls
+- [x] Debug button click event handlers (added console logging)
+- [x] Verify message handler registration (reimplemented WebView configuration)
+- [x] Ensure navigation overlay is visible and interactive (improved styling and opacity)
+- [x] Fix tap gesture recognizers (expanded tap areas and improved button size)
+- [x] Make navigation controls more accessible (increased contrast and size)
+
+#### 4. Preserve Content Layout
+- [x] Add proper font and text styling to match normal mode
+- [x] Compare normal and speed reading HTML structures (accomplished via unified WebView)
+- [x] Ensure original HTML structure is preserved (implemented div content wrapper)
+- [x] Fix paragraph spacing and margins (added proper CSS for margins and spacing)
+
+#### 5. Integration Testing
+- [ ] Test all speed reading modes (inline, multiline, etc.)
+- [ ] Verify sentence navigation works in all modes
+- [ ] Test image handling in speed reading
+- [ ] Ensure proper page transitions
+
+#### 6. Current Refinements
+- [x] Force browser repaints for DOM stability
+- [x] Make highlighted sentences more visible (enhanced styling)
+- [x] Fix JS scope issues with window functions
+- [x] Implement multiple fallback methods for highlighting
+- [x] Add DOM verification and debugging tools
+
+#### 7. Next Steps
+- [ ] Test fixes on a real device to verify improvements
+- [ ] Improve visual feedback when touching navigation controls
+- [ ] Optimize performance for large documents
+- [ ] Implement smoother transitions between sentences
+- [ ] Add visual feedback for user interactions
+- [ ] Improve accessibility features
+
+#### 8. Refactor: Unify Rendering View
+**Goal:** Modify `BaseBookWebView` to handle both normal and speed reading modes conditionally, ensuring consistent layout and potentially fixing freezing issues. Remove redundant speed reading WebView files.
+
+**Phase 1: Preparation & Code Extraction**
+- [x] Read `InlineSpeedReadingWebView.swift`.
+- [x] Identify and extract core speed reading JavaScript functions (highlighting, scrolling, sentence taps, logging, highlight updates).
+- [x] Identify and extract speed reading specific CSS rules (`.current-highlight`).
+- [x] Consolidate extracted JS/CSS, ensuring JS message handler names (`sentenceTap`, `highlightUpdate`, `log`) are correct for Swift integration.
+- [x] Create `SpeedReadingScripts.swift` to store extracted code.
+
+**Phase 2: Enhance `BaseBookWebView.swift`**
+- [x] Add `isSpeedReadingActive: Bool` property.
+- [x] Add `currentSentenceIndex: Binding<Int>?` property.
+- [x] Add optional callbacks: `onSentenceTap`, `onHighlightUpdate`, `onLog`.
+- [x] Modify `makeUIView`: Conditionally add `WKScriptMessageHandler`s (`sentenceTap`, `highlightUpdate`, `log`) based on `isSpeedReadingActive`.
+- [x] Modify `Coordinator`: Store new callbacks. Update `userContentController(:didReceive:)` to handle new messages and call callbacks. Add `lastHighlightedIndex` state.
+- [x] Modify `Coordinator.webView(:didFinish:)`: Conditionally inject extracted speed reading JS/CSS if `isSpeedReadingActive`.
+- [x] Modify `updateUIView`: If `isSpeedReadingActive` and `currentSentenceIndex` changed, evaluate `highlightSentence()` JavaScript. Update `lastHighlightedIndex`.
+- [x] Modify `dismantleUIView`: Conditionally remove speed reading script message handlers.
+
+**Phase 3: Update Calling Views**
+- [x] Modify `NormalBookWebView.swift`: Add and pass through new parameters (`isSpeedReadingActive`, `currentSentenceIndex`, callbacks) to `BaseBookWebView`.
+- [x] Modify `UnifiedReaderView.swift`: Remove mode `switch` for WebViews. Always use `NormalBookWebView`. Pass new parameters conditionally based on `speedReaderMode`.
+
+**Phase 4: Cleanup**
+- [x] Delete `ADHDReader/Views/SpeedReading/InlineSpeedReadingWebView.swift`.
+- [x] Delete `ADHDReader/Views/SpeedReading/MultilineSpeedReadingWebView.swift`.
+- [x] Delete `ADHDReader/Views/SpeedReading/BaseSpeedReadingWebView.swift`.
+
+**Phase 5: Testing & Verification**
+- [~] Test Normal Reading Mode: Verify layout, interactions, and check console.
+- [~] Test Speed Reading Mode (Inline): Verify layout consistency, highlighting, playback, interactions, responsiveness (no freeze), and check console.
+- [~] Test Mode Switching: Verify smooth transitions between modes.
+
+#### 9. Refactor: Remove Two-Way Navigation Control
+**Goal:** Completely remove the `NavigationControlsView` (left/right chevron buttons) component from the application.
+
+**Phase 1: Identification & Analysis**
+- [x] Locate Definition File: Confirmed `ADHDReader/Views/Common/NavigationControlsView.swift`.
+- [x] Analyze Definition File Structure: Confirmed file contains `NavigationControlsView` (remove), `NavigationButton` (remove), and `NavigationOverlayView` (keep).
+- [x] Identify All Usages: Searched codebase, found no usages outside definition file (likely removed from `UnifiedSpeedReaderView` previously).
+
+**Phase 2: Refactoring & Removal**
+- [x] Refactor Definition File: Edited `ADHDReader/Views/Common/NavigationControlsView.swift` to remove `NavigationControlsView` and `NavigationButton` structs, keeping `NavigationOverlayView`.
+- [x] Remove Instantiations: Confirmed no remaining instantiations to remove.
+
+**Phase 3: Verification & Cleanup**
+- [x] Compile Check: Code compiles.
+- [ ] Manual UI Verification: Verify chevron buttons are gone, 4-way overlay functions correctly.
+- [ ] Cleanup (Optional): Rename `ADHDReader/Views/Common/NavigationControlsView.swift` to `NavigationOverlayView.swift`.
+

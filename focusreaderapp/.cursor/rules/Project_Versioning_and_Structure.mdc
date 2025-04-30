@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+### Rules:
+
+1.  **Versioning:**
+    *   Use **Semantic Versioning (SemVer)**: `MAJOR.MINOR.PATCH` (e.g., `1.2.3`).
+        *   `MAJOR`: Breaking changes.
+        *   `MINOR`: New features (backward-compatible).
+        *   `PATCH`: Bug fixes (backward-compatible).
+    *   Maintain versions using Git tags (`git tag v1.2.3`).
+    *   Update the application version (e.g., in `Info.plist` or build settings) consistently with Git tags for releases.
+
+2.  **Git Branching Strategy (Simplified Gitflow):**
+    *   `main`: Production-ready code ONLY. Merged into *from* `develop`. Protected branch. Corresponds to tagged releases.
+    *   `develop`: Main integration branch for ongoing development. Merged into *from* feature branches.
+    *   `feature/<feature-name>`: Branched *from* `develop` for new features or significant refactors. Merged *back into* `develop` upon completion. Delete after merge.
+    *   `fix/<issue-id-or-desc>`: Branched *from* `develop` for non-critical bug fixes. Merged *back into* `develop`. Delete after merge.
+    *   `hotfix/<issue-id-or-desc>`: Branched *from* `main` for critical production bug fixes ONLY. Merged *back into* `main` AND `develop`. Tag `main` with a PATCH version increment after merging. Delete after merge.
+
+3.  **Code Structure & Organization:**
+    *   Follow platform/language conventions (e.g., standard Swift project structure).
+    *   Group files by feature or module (e.g., `Models/`, `Views/`, `ViewModels/`, `Services/`, `Utilities/`).
+    *   Keep code clean, well-formatted (use linters/formatters), and DRY (Don't Repeat Yourself).
+    *   Add comments only for complex logic or non-obvious decisions, not for explaining basic syntax.
+    *   Ensure clear separation of concerns (e.g., UI, business logic, data access).
+
+4.  **Pull Requests (PRs) / Merge Requests (MRs):**
+    *   All merges into `develop` and `main` (except hotfixes directly to `main`) MUST go through PRs/MRs.
+    *   PRs should be focused, referencing the relevant feature or bug fix.
+    *   Require at least one reviewer approval (if applicable).
+    *   Ensure builds/tests pass before merging.

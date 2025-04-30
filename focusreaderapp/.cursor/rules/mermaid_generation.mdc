@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+You are a system architect. Your task is to read the provided code and model the code architecture into a UML class diagram using Mermaid.
+
+Instructions:
+1.  **Identify All Types:** Scan the code to identify all `class`, `struct`, and `enum` definitions.
+2.  **Detail Members:** For each type:
+    *   List all attributes/properties (including stored and computed), noting visibility (+ public, - private, # internal/fileprivate), name, and type. Mark static members with `$` (e.g., `+sharedInstance$`).
+    *   List all methods, noting visibility, name, parameters (type only), and return type. Mark static methods with `$`.
+    *   For `enum`s:
+        *   Declare them using `class Name { <<enumeration>> ... }`. **Crucially, do NOT use `{` after the stereotype.** List cases directly inside.
+        *   Include any raw values, associated values (shown like methods, e.g., `text(String, Type)`), properties, and methods.
+    *   Identify and list protocol conformances using stereotypes inside the class block (e.g., `<<Codable, Identifiable>>`).
+3.  **Detect and Model Relationships:**
+    *   **Composition (`*--`):** Instance variable holds another class/struct instance (strong "has-a", owns lifecycle). Example: `ClassA "1" *-- "1" ClassB : holds`.
+    *   **Aggregation (`o--`):** Instance variable holds a reference (often via DI or weak ref), but doesn't own lifecycle (weaker "has-a"). Example: `ClassA "1" o-- "0..*" ClassB : uses`.
+    *   **Association (`-->`):** General usage/dependency. Method parameters, return types, local variables, or direct calls. Example: `ClassA --> ClassB : depends on`. **Ensure ALL usages are captured, like the `NSLock` usage in `ImageMarkerMapping`**.
+    *   **Inheritance (`--|>`):** Class inheritance. Example: `SubClass --|> SuperClass`.
+    *   **Realization/Conformance (`..|>`):** Protocol conformance (alternative to stereotype). Example: `MyClass ..|> Codable`. (Stereotype is often cleaner).
+    *   **Enum Case Usage (`--|>` or `-->`):** If an enum case has associated types that are other defined classes/structs/enums, use `--|>` or `-->` to show this link. Example: `ChapterBlock --|> ChapterImage : image case`.
+4.  **Refine Relationships:**
+    *   Add **multiplicity** where logical (e.g., `"1"`, `"0..*"`, `"1..*"`).
+    *   Add descriptive **labels** to relationship lines (e.g., `: contains`, `: uses for locking`).
+5.  **Mermaid Syntax:**
+    *   Start with `classDiagram`.
+    *   Use correct syntax for members (`+name: Type`, `-method(paramType): ReturnType`, `+staticMethod$()`).
+    *   Use correct syntax for enum stereotypes (`class Name { <<enumeration>> ... }`).
+    *   Use correct syntax for relationships (`ClassA "1" *-- "0..*" ClassB : label`).
+6.  **Review and Verify:** Before outputting:
+    *   **Check Enum Syntax:** Double-check that all enums use `class Name { <<enumeration>> ... }` without trailing braces.
+    *   **Check All Relationships:** Systematically review each class/struct/enum. Does it hold instances of others (composition)? Does it reference others (aggregation/association)? Does it use others in methods? Ensure *no* connections are missed.
+    *   **Check Syntax:** Mentally parse the diagram or use an external Mermaid validator if possible to catch syntax errors like the ones encountered previously.
+7.  **Output:**
+    *   Output clean Mermaid code only, enclosed in a ```mermaid code block.
+    *   Provide a very concise summary of the diagram's key components and relationships.
+    *   Flag potential violations of [core_principles.mdc](mdc:.cursor/rules/core_principles.mdc) (like redundancy or unclear responsibilities) observed during analysis for future refactoring.

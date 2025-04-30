@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description:Core Principles for Clean Code in Swift Project and best practices 
+globs: 
+alwaysApply: false
+--- 
+
+Check all the following coding principles, and try your best to FOLLOW THEM when coding!
+
+1.DRY (Don’t Repeat Yourself):
+Avoid duplicating code. Instead of copy‑pasting similar functionalities, design functions or modules that can be reused across your project. This improves maintainability and reduces the surface for bugs.
+
+2.KISS (Keep It Simple, Stupid):
+Web projects tend to grow in complexity quickly. By aiming to keep your code as simple as possible, you avoid unnecessary complications. Complex logic should be broken down into comprehensible, small pieces.
+
+3.Separation of Concerns (SoC):
+Divide your project into distinct sections, each responsible for a specific aspect or functionality. In JavaScript, this might mean clearly separating UI logic from data handling or API interactions. Frameworks such as React, Angular, or Vue naturally encourage such separations, but the principle applies to vanilla JS and server‑side code as well.
+
+4. Modularity:
+Writing self‑contained modules or components not only aligns with DRY and SoC but also makes testing and maintenance easier. The trend towards ES Modules and common practices like dependency injection in modern JavaScript are reflections of this principle.
+
+5.Single Responsibility Principle (SRP):
+Even though this is one of the SOLID principles, it is universally applicable. Each module, function, or class should have one clear purpose. In web development, this keeps your components lean and easier to debug or extend over time.
+
+6.Readability and Maintainability:
+Code is read much more often than it's written. Emphasize clear naming conventions, consistent formatting, and comprehensive documentation. This is supported by many community style guides, which set practical standards for both team and solo projects.
+
+7.YAGNI (You Aren't Gonna Need It):
+It might be tempting to build flexible or overly generic code in anticipation of future requirements. However, adding complexity “just in case” can lead to bloated, less comprehensible code. Focus on current needs and extend your codebase only when necessary.
+
+8.Testing and Automation:
+Incorporating unit tests and automated testing frameworks (such as Jest or Mocha for JavaScript) ensures that as you refactor or add new features, your system behaves as expected. This principle reinforces many of the above by encouraging safe, incremental changes.
+
+9.Performance Optimization and Scalability:
+For web projects, design patterns that promote efficient asynchronous operations, caching, and responsiveness are essential. This includes the use of design patterns suited to event‑driven environments, like the observer or pub‑sub patterns, which are common in web interfaces and real‑time applications.
+
+10 Adopting Established Style Guides:
+Consistency in code layout and style—enforced by tools like ESLint or Prettier—promotes readability and reduces errors due to ambiguous coding practices. Popular style guides, like the Airbnb JavaScript Style Guide, offer a comprehensive set of rules that have been adopted by many professional teams.
+
+
+
+
+
+

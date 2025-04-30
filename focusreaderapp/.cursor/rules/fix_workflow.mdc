@@ -1,0 +1,89 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: query to resolve an issue 
+globs: 
+alwaysApply: false
+---
+
+User Query: {replace this with a specific and concise description of the problem you are still facing}
+--- 
+Based on the persistent user query detailed above the --- separator, a previous attempt likely failed to resolve the issue. Discard previous assumptions about the root cause. We must now perform a systematic re-diagnosis by following these steps, adhering strictly to your core operating principles @core-principles.mdc
+
+- Step Back & Re-Scope: Forget the specifics of the last failed attempt. Broaden your focus. Identify the core functionality or system component(s) involved in the user's reported problem (e.g., authentication flow, data processing pipeline, specific UI component interaction, infrastructure resource provisioning).
+
+- Map the Relevant System Structure: Use tools (list_dir, file_search, codebase_search, read_file on config/entry points) to map out the high-level structure and key interaction points of the identified component(s). Understand how data flows, where configurations are loaded, and what dependencies exist (internal and external). Gain a "pyramid view" – see the overall architecture first.
+
+- Hypothesize Potential Root Causes (Broadly): Based on the system map and the problem description, generate a broad list of potential areas where the root cause might lie (e.g., configuration error, incorrect API call, upstream data issue, logic flaw in module X, dependency conflict, infrastructure misconfiguration, incorrect permissions).
+Systematic Investigation & Evidence Gathering: Prioritize and investigate the most likely hypotheses from step 3 using targeted tool usage.
+
+- Validate Configurations: Use read_file to check all relevant configuration files associated with the affected component(s).
+
+- Trace Execution Flow: Use grep_search or codebase_search to trace the execution path related to the failing functionality. Add temporary, descriptive logging via edit_file if necessary and safe (request approval if unsure/risky) to pinpoint failure points.
+Check Dependencies & External Interactions: Verify versions and statuses of dependencies. If external systems are involved, use safe commands (run_terminal_cmd with require_user_approval=true if needed for diagnostics like curl or status checks) to assess their state.
+
+- Examine Logs: If logs are accessible and relevant, guide me on how to retrieve them or use tools (read_file if they are simple files) to analyze recent entries related to the failure.
+Identify the Confirmed Root Cause: Based only on the evidence gathered through tool-based investigation, pinpoint the specific, confirmed root cause. Do not guess. If investigation is inconclusive, report findings and suggest the next most logical diagnostic step.
+
+- Propose a Targeted Solution: Once the root cause is confirmed, propose a precise fix that directly addresses it. Explain why this fix targets the identified root cause.
+Plan Comprehensive Verification: Outline how you will verify that the proposed fix resolves the original issue AND does not introduce regressions. This verification must cover the relevant positive, negative, and edge cases as applicable to the fixed component.
+
+- Execute & Verify: Implement the fix (using edit_file or run_terminal_cmd with appropriate safety approvals) and execute the comprehensive verification plan.
+Report Outcome: Succinctly report the identified root cause, the fix applied, and the results of your comprehensive verification, confirming the issue is resolved.
+
+- Proceed methodically through these diagnostic steps. Do not jump to proposing a fix until the root cause is confidently identified through investigation.
+
+### Standard Fix Workflow
+
+When a bug or issue is reported (e.g., "The book only loaded 1 chapter"), follow this systematic workflow, adhering strictly to the core principles defined in `@core-principles.mdc` and the Git procedures in `@Project_Versioning_and_Structure.mdc`.
+
+**I. Diagnosis & Root Cause Analysis**
+
+1.  **Understand the Problem:** Clearly define the reported issue and the expected correct behavior. Identify the core functionality involved (e.g., EPUB parsing, chapter loading, UI display).
+2.  **Map Relevant Structure:** Use tools (`list_dir`, `file_search`, `codebase_search`, `read_file` on key files) to identify and understand the relevant modules, classes, functions, and data flows related to the faulty component.
+3.  **Hypothesize Potential Causes:** Based on the problem and system structure, brainstorm potential root causes (e.g., incorrect parsing logic, off-by-one error in loops, faulty data handling, UI state issue, configuration error, dependency problem).
+4.  **Systematic Investigation:** Prioritize hypotheses and investigate using targeted tool usage:
+    *   **Read Code:** Use `read_file` to scrutinize the logic in suspected areas.
+    *   **Trace Execution:** Use `grep_search` or `codebase_search` to follow control flow and data transformations.
+    *   **Check Dependencies:** Verify interactions with external libraries or internal modules.
+    *   **Add Logging (If Necessary):** Use `edit_file` (requesting approval if potentially risky) to insert temporary, descriptive logging to pinpoint the exact point of failure or incorrect state.
+    *   **Examine Logs:** Analyze existing application logs (`read_file` or other methods if applicable) for relevant errors or warnings.
+5.  **Confirm Root Cause:** Based *only* on the evidence gathered, definitively identify and state the root cause. Avoid speculation. If inconclusive, report findings and propose the next diagnostic step.
+
+**II. Implementation & Verification**
+
+6.  **Create Git Branch:** Follow the branching strategy in `@Project_Versioning_and_Structure.mdc`:
+    *   **Identify Branch Type:** Is it a critical production bug (`hotfix`) or a regular development bug (`fix`)?
+    *   **Checkout & Update Base:**
+        *   For `fix`: Use `run_terminal_cmd` for `git checkout develop && git pull origin develop`.
+        *   For `hotfix`: Use `run_terminal_cmd` for `git checkout main && git pull origin main`.
+    *   **Create Branch:** Use `run_terminal_cmd` for `git checkout -b fix/<issue-id-or-desc>` or `git checkout -b hotfix/<issue-id-or-desc>`.
+7.  **Implement Fix:**
+    *   Use `edit_file` to apply the code changes that directly address the confirmed root cause.
+    *   Explain *why* the proposed change corrects the issue.
+8.  **Comprehensive Verification:**
+    *   Define and perform tests covering:
+        *   The original bug scenario (confirm fix).
+        *   Related functionality (check for regressions).
+        *   Relevant positive, negative, and edge cases for the modified code.
+    *   Use `run_terminal_cmd` for automated tests or guide manual testing steps. Report verification results.
+9.  **Commit Changes:**
+    *   Use `run_terminal_cmd` for `git add <modified_files>`.
+    *   Use `run_terminal_cmd` for `git commit -m "fix: [Brief description] (closes #[issue_number])"` or `git commit -m "hotfix: [Brief description] (closes #[issue_number])"`.
+
+**III. Git Workflow Integration & Cleanup**
+
+10. **Push Branch:**
+    *   Use `run_terminal_cmd` for `git push origin fix/<issue-id-or-desc>` or `git push origin hotfix/<issue-id-or-desc>`.
+11. **Create Pull/Merge Request (PR/MR):**
+    *   Advise the user to create a PR/MR via the Git platform (e.g., GitHub).
+    *   Target Branch: `fix` -> `develop`; `hotfix` -> `main`.
+12. **Merge & Post-Merge:**
+    *   After PR/MR approval and merging:
+        *   **Hotfix Specific:** Merge the `hotfix` changes back into `develop` as well (`git checkout develop && git pull origin develop && git merge --no-ff main && git push origin develop`). Follow the **Hotfix Tagging Steps** from `@Project_Versioning_and_Structure.mdc` (update version file, tag `main`, push tag).
+        *   **Cleanup:** Delete the feature/hotfix branch locally and remotely using `run_terminal_cmd` (`git branch -d <branch_name>`, `git push origin --delete <branch_name>`).
+
+This structured approach ensures issues are diagnosed thoroughly, fixed correctly, verified comprehensively, and managed according to the established Git workflow.

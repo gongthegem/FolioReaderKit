@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: code refactor rules 
+globs: 
+alwaysApply: false
+---
+
+Code Refactor: Perform a repository‑wide refactor that
+(1) separates responsibilities and introduces decoupling layers. 
+(2) detects and removes duplicate code,
+(3) splits or rewrites overly complex functions/files
+
+Specific Steps
+1. make a refactoring plan
+    (1) read through the codebase and make a refactoring plan. focus on single responsibility and decouping. follow [core_principles.mdc](mdc:.cursor/rules/core_principles.mdc) 
+    (2) go through the codebase again, and see if the first version of refactoring plan will introduce duplicated or conflicting logic against current codebase. if so, make sure improve the refactoring plan. 
+    (3) repeast step (2) until you cannot find any problem with the refactoring plan
+
+2. implement the refactoring plan
+    (1) break down the improved refactoring plan into small tasks, add them to [refactor_task_tracker.mdc](mdc:.cursor/rules/refactor_task_tracker.mdc)
+    (2) start implement refactoring, make sure the implementation follow [core_principles.mdc](mdc:.cursor/rules/core_principles.mdc). 
+    (3) mark the task done in [refactor_task_tracker.mdc](mdc:.cursor/rules/refactor_task_tracker.mdc) and continue next one.
+
+
+---
+Based on the user request detailed above the —--separator, proceed with the implementation. You MUST rigorously follow your core development principles [core_principles.mdc](mdc:.cursor/rules/core_principles.mdc) , paying specific attention to the following for this particular request:
+- avoid same class, files names 
+- avoid redeclarations of anything
+- avoid duplicated or conflicting logic
+- make sure the refactoring do not introduce more bugs or break any current functions

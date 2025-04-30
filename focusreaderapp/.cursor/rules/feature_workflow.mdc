@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+### Standard Feature Workflow
+
+When a new feature is requested (e.g., "Add bookmarking functionality"), follow this systematic workflow, adhering strictly to the core principles defined in `@core-principles.mdc` and the Git procedures in `@Project_Versioning_and_Structure.mdc`.
+
+**I. Planning & Design**
+
+1.  **Understand Requirements:** Clearly define the feature's goals, scope, user stories, and acceptance criteria. Use tools to gather context about existing related functionality if necessary. Resolve ambiguities proactively.
+2.  **Map Relevant Structure & Assess Impact:** Use tools (`list_dir`, `file_search`, `codebase_search`, `read_file`) to understand where the new feature will integrate. Analyze potential impacts on existing code, architecture, performance, and dependencies.
+3.  **Design Approach:** Outline the implementation strategy. Consider different approaches, evaluating them for maintainability, scalability, performance, and consistency with existing patterns. Prioritize reuse of existing components where possible.
+4.  **Plan Verification:** Define how the feature will be tested, including unit tests, integration tests, UI tests (if applicable), and manual checks covering positive, negative, and edge cases.
+
+**II. Implementation & Verification**
+
+5.  **Create Git Branch:** Follow the branching strategy in `@Project_Versioning_and_Structure.mdc`:
+    *   Use `run_terminal_cmd` for `git checkout develop && git pull origin develop`.
+    *   Use `run_terminal_cmd` for `git checkout -b feature/<feature-name>`.
+6.  **Implement Feature:**
+    *   Write the code according to the design. Use `edit_file` for modifications.
+    *   Develop iteratively, potentially breaking the feature into smaller, manageable chunks.
+    *   Write unit/integration tests alongside the implementation code.
+7.  **Comprehensive Verification:**
+    *   Execute the verification plan defined in Step 4.
+    *   Use `run_terminal_cmd` for automated tests. Guide manual testing steps.
+    *   Iteratively fix bugs found during verification.
+    *   Report verification results.
+8.  **Commit Changes:**
+    *   Commit work frequently with clear messages.
+    *   Use `run_terminal_cmd` for `git add <modified_files>`.
+    *   Use `run_terminal_cmd` for `git commit -m "feat: [Brief description of feature or sub-task] (relates #[issue_number])"`. Squash commits appropriately before creating the PR if necessary for a cleaner history.
+
+**III. Git Workflow Integration & Cleanup**
+
+9.  **Push Branch:**
+    *   Use `run_terminal_cmd` for `git push origin feature/<feature-name>`.
+10. **Create Pull/Merge Request (PR/MR):**
+    *   Advise the user to create a PR/MR via the Git platform (e.g., GitHub).
+    *   Target Branch: `feature/<feature-name>` -> `develop`.
+    *   Ensure the PR description clearly explains the feature, the changes made, and how to test it. Link relevant issues.
+11. **Code Review & Merge:**
+    *   Address feedback from code reviews.
+    *   After PR/MR approval and successful checks, merge the feature into `develop`.
+12. **Cleanup:**
+    *   Delete the feature branch locally and remotely using `run_terminal_cmd` (`git checkout develop`, `git branch -d feature/<feature-name>`, `git push origin --delete feature/<feature-name>`).
+
+**Note on Versioning:** Features merged into `develop` contribute to the *next* application version. The actual SemVer tag (e.g., `v1.2.0`) is applied to the `main` branch during the release process, as detailed in the "Release Tagging Steps" in `@Project_Versioning_and_Structure.mdc`.
+
+This structured approach ensures features are well-planned, implemented robustly, verified thoroughly, and managed according to the established Git workflow.

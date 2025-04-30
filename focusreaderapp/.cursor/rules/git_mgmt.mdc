@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Git Management Practices
+globs: 
+alwaysApply: false
+---
+
+
+## Branch Strategy
+- `main` - Stable, working code only
+- `develop` - Integration branch for completed features
+- Feature branches: `feature/[task-number]-[short-description]`
+- Bugfix branches: `bugfix/[issue-number]-[short-description]`
+
+## Commit Guidelines
+1. Make atomic commits (one logical change per commit)
+2. Use descriptive commit messages with task numbers:
+   - Format: `[Task-XX] Brief description of changes`
+   - Example: `[Task-27] Implement sentence parsing logic`
+3. Include detailed body for complex changes
+4. Reference task numbers in commit messages
+
+## Integration Process
+1. Complete feature in feature branch
+2. Run tests locally before pushing
+3. Push feature branch and create PR to develop
+4. After review, merge to develop
+5. Periodically merge develop into main when features are stable 

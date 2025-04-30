@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+1. Build the project
+    (1) **Quit Xcode** : pkill Xcode
+    (2) Wipe DerivedData: rm -rf ~/Library/Developer/Xcode/DerivedData/*
+    (3) Build & Log: xcodebuild -scheme ADHDReader -destination 'platform=iOS Simulator,name=iPhone 16 Pro' clean build 2>&1 | tee ~/Desktop/build.log
+    
+    (4) find first error: grep -n -m1 "error:" ~/Desktop/build.log
+    (5) Open & Fix
+	•	Copy file:line from grep.
+	•	In Xcode: ⌘‑O → paste file:line → correct syntax/import/link.
+
+2. every time you see a compile error, break it down. find the root cause by following [root_cause_analysis.mdc](mdc:.cursor/rules/root_cause_analysis.mdc), then update @build_error_tracker.mdc
+
+3. Fix the building error based on your root cause analysis. when you fixing the error and do code changes, make sure follow [code_refactor.mdc](mdc:.cursor/rules/code_refactor.mdc)
+
+4. repeat steps 1,2,3 until there is no compiling error anymore! REMEMBER the FINAL GOAL is to make sure there is no COMPILATION ERROR. so continue the test, until you reach the final goal!

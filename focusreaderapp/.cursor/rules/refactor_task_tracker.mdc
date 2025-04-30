@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ADHDReader Refactoring Tasks
+
+# ADHD Reader Refactoring Task Tracker
+
+## Phase 1: Core Architecture Restructuring
+
+- [x] **Domain Models Enhancement**
+  - [x] Add annotations to Book.swift
+  - [x] Add annotations to Chapter.swift
+  - [x] Add annotations to ChapterBlock.swift
+  - [x] Add annotations to TocItem.swift
+  - [x] Add annotations to ChapterImage.swift with refactoring notes
+  - [ ] Add annotations to remaining model files
+
+- [ ] **Repository Pattern Implementation**
+  - [x] Create BookRepository protocol and implementation
+  - [x] Create ReadingProgressRepository protocol and implementation
+  - [x] Create ReaderSettingsRepository protocol and implementation
+  - [x] Create FileSystemService for file operations
+  - [ ] Update ViewModels to use repositories instead of direct UserDefaults/FileManager access
+
+- [ ] **Service Extraction**
+  - [x] Extract EPUBUnzipService from EPUBParser
+  - [x] Extract MetadataParsingService from EPUBParser
+  - [x] Extract ContentExtractionService from EPUBParser
+  - [ ] **In Progress:** Extract TocParsingService from EPUBParser
+    - [ ] Define TocParsingService protocol 
+    - [ ] Create implementation class that handles TOC parsing logic
+    - [ ] Update EPUBParser to use the new service
+  - [ ] Extract HTMLContentService from ContentPipeline
+  - [x] Extract TextProcessingService from TextUtilities
+  - [ ] Create ContentCoordinatorService as façade
+
+## Phase 2: View Model Decomposition
+
+- [ ] **BookViewModel Split**
+  - [ ] Create LibraryViewModel for book collection management
+  - [ ] Create BookReaderViewModel for reading experience
+  - [ ] Create ReaderSettingsViewModel for preferences
+  - [ ] Update ContentView to use new ViewModels
+
+- [ ] **Reading Experience Specialization**
+  - [ ] Refine SpeedReaderViewModel for speed reading only
+  - [ ] Refine ReadingContentViewModel for content preparation only
+
+## Phase 3: Utilities Reorganization
+
+- [ ] **Specialized Utilities**
+  - [ ] Split HTMLUtilities into HTMLParser and HTMLGenerator
+  - [ ] Reorganize TextUtilities into domain-specific helpers
+  - [ ] Create dedicated PathUtilities for path resolution
+
+- [ ] **Consolidate Image Handling**
+  - [ ] Create ImageProcessingService for all image operations
+  - [ ] Update ChapterImage to follow SRP
+
+## Phase 4: Documentation and Cleanup
+
+- [x] **Add Consistent Annotations**
+  - [x] Add annotations to BookViewModel with refactoring suggestions
+  - [x] Add annotations to EPUBParser with refactoring suggestions
+  - [x] Add annotations to ContentPipeline with refactoring suggestions
+  - [x] Add annotations to ReadingContentViewModel with refactoring suggestions
+  - [ ] Complete annotations for remaining classes
+
+- [x] **Create Refactoring Plan**
+  - [x] Document current issues and responsibilities
+  - [x] Create comprehensive refactoring strategy
+  - [x] Provide implementation examples
+  - [x] Create RefactoringPlan.md
+
+- [ ] **Code Structure Cleanup**
+  - [ ] Remove redundant code across the codebase
+  - [ ] Ensure consistent naming conventions
+  - [ ] Refactor to follow Swift style guidelines
+
+---
+
+# Updated Comprehensive Refactoring Plan
+
+## 1. Text Processing Services
+
+- [x] **Create TextProcessingService Hierarchy**
+  - [x] Define TextProcessingService protocol
+  - [x] Create SentenceProcessor implementation
+  - [x] Create HTMLTextProcessor implementation
+  - [x] Create AttributedTextProcessor implementation
+  - [x] Create DefaultTextProcessingService as main implementation
+  - [ ] Move relevant code from TextUtilities
+  - [ ] Move relevant code from HTMLUtilities
+  - [ ] Update ViewModels to use new service
+
+## 2. EPUB Parsing Services
+
+- [x] **Create EPUBParserService Hierarchy**
+  - [x] Define EPUBParserService protocol
+  - [x] Create EPUBExtractorService protocol and implementation
+  - [x] Create EPUBMetadataParserService protocol and implementation
+  - [x] Create EPUBContentParserService protocol and implementation
+  - [x] Create DefaultEPUBParserService as coordinating implementation
+  - [ ] Refactor existing EPUBParser to use new components
+  - [ ] Update BookViewModel to use new service
+
+## 3. Content Services
+
+#### ContentProcessingService Hierarchy
+- [x] Define ContentProcessingService protocol
+- [x] Define ContentFormattingService protocol
+- [x] Create DefaultContentProcessingService implementation 
+- [x] Create DefaultContentFormattingService implementation
+- [x] Move existing content processing code from EPUBParser
+- [x] Move existing formatting code from ReadingViewController
+
+#### TextProcessingService Hierarchy
+- [x] **Create TextProcessingService Hierarchy**
+  - [x] Define TextProcessingService protocol
+  - [x] Create SentenceProcessor implementation
+  - [x] Create HTMLTextProcessor implementation
+  - [x] Create AttributedTextProcessor implementation
+  - [x] Create DefaultTextProcessingService as main implementation
+  - [ ] Move relevant code from TextUtilities
+  - [ ] Move relevant code from HTMLUtilities
+  - [ ] Update ViewModels to use new service
+
+## 4. Reading State Services
+
+- [ ] **Create ReadingStateService**
+  - [ ] Define LibraryService protocol
+  - [ ] Define ReadingStateService protocol
+  - [ ] Create implementations for library management
+  - [ ] Create implementations for reading position tracking
+  - [ ] Update BookViewModel to use these services
+
+## 5. ViewModel Refactoring
+
+- [ ] **Create BaseReadingViewModel**
+  - [ ] Extract common functionality from ReadingContentViewModel and SpeedReaderViewModel
+  - [ ] Implement shared text processing methods
+  - [ ] Update specialized ViewModels to extend the base
+  
+- [ ] **Refactor BookViewModel**
+  - [ ] Extract LibraryService functionality
+  - [ ] Extract ReadingStateService functionality
+  - [ ] Simplify BookViewModel to use new services
+  - [ ] Update View references
+
+## 6. File Structure Reorganization
+
+- [x] **Update Services Directory Structure**
+  - [x] Create Services/EPUB/ directory
+  - [x] Create Services/Content/ directory
+  - [x] Create Services/Text/ directory
+  - [x] Create Services/Reading/ directory
+  - [ ] Move files to appropriate locations
+  - [ ] Update imports and references
+
+## Implementation Order
+
+1. Text Processing Services (most dependencies)
+2. EPUB Parsing Services
+3. Content Services
+4. Reading State Services
+5. ViewModel Refactoring
+6. File Structure Reorganization
+
+
+globs: 
+alwaysApply: false
+---
+# ADHDReader Refactoring Tasks

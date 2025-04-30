@@ -1,0 +1,69 @@
+---
+description: Rules to prevent duplicate code and encourage refactoring of existing code when appropriate
+globs: 
+alwaysApply: false
+---
+---
+description: Rules to prevent duplicate code and encourage refactoring of existing code when appropriate
+globs: 
+alwaysApply: false
+---
+# Code Reuse & Refactoring First
+
+## Codebase Exploration Protocol
+Before creating new files or implementing new functionality, thoroughly explore the existing codebase:
+1. Use codebase search with relevant keywords to find similar functionality
+2. Examine project structure to understand organization patterns
+3. Review related components and their design patterns
+4. Check for interfaces or abstract classes that might be extended
+5. Identify utility functions that could be reused
+
+## Duplication Detection Checklist
+Specific checks to identify potential code duplication:
+1. Search for similar function/method names across the codebase
+2. Look for classes with similar responsibilities or data models
+3. Review utility/helper functions that may provide similar functionality
+4. Check if existing components can be parameterized instead of duplicated
+5. Review test cases for similar functionality being tested
+
+## Refactoring Decision Tree
+Guidelines for deciding between refactoring and creating new code:
+
+- If existing code has >70% functional overlap with requirements:
+  - Refactor existing code to support new requirements
+- If multiple locations implement similar logic with minor variations:
+  - Extract common functionality into a shared utility/service
+- If class/component would exceed single responsibility principle after changes:
+  - Split into multiple components with clear responsibilities
+- If new functionality represents a true extension of an existing pattern:
+  - Extend existing classes/interfaces rather than creating new ones
+- If requirements significantly differ from existing implementations:
+  - Create new implementation but document relationship to similar components
+
+## Implementation Protocol
+Steps to follow when implementing new features or fixing issues:
+
+### Feature Protocol
+1. Perform Codebase Exploration to identify related/similar components
+2. Complete Duplication Detection Checklist
+3. Apply Refactoring Decision Tree to determine approach
+4. If refactoring: create comprehensive tests before modifying existing code
+5. If new component: document why existing components couldn't be extended
+6. Ensure new code follows established patterns in the codebase
+7. Update documentation to reflect relationship between components
+
+### Bugfix Protocol
+1. Locate the specific code causing the issue through debugging/testing
+2. Identify if the bug exists in multiple locations (potential code duplication)
+3. Check if fix requires structural changes or simple corrections
+4. For structural issues: apply Refactoring Decision Tree
+5. For simple fixes: ensure fix is applied to all instances of the issue
+6. Add regression tests to prevent recurrence
+
+## Code Review Verification
+Checks to perform during code review to enforce these principles:
+1. Verify Codebase Exploration was performed (evidence in PR description)
+2. Confirm that similar existing components were considered
+3. Validate refactoring or new code decision against the Decision Tree
+4. Check for appropriate levels of abstraction and generalization
+5. Ensure documentation explains component relationships and design decisions
