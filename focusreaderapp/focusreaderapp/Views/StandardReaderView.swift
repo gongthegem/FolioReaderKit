@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 struct StandardReaderView: View {
     @ObservedObject var bookViewModel: BookViewModel
@@ -158,14 +159,19 @@ struct BookWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.scrollView.bounces = false
         
+        print("BookWebView - makeUIView: Creating web view with configuration")
+        
         return webView
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
         // Only reload if content changed
         if webView.tag != htmlContent.hashValue {
+            print("BookWebView - updateUIView: Loading HTML content with hash: \(htmlContent.hashValue)")
             webView.loadHTMLString(htmlContent, baseURL: baseURL)
             webView.tag = htmlContent.hashValue
+        } else {
+            print("BookWebView - updateUIView: Content unchanged, skipping reload")
         }
     }
     
@@ -178,6 +184,23 @@ struct BookWebView: UIViewRepresentable {
         
         init(_ parent: BookWebView) {
             self.parent = parent
+        }
+        
+        // WKNavigationDelegate methods for debugging
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            print("WebView - didStartProvisionalNavigation: Started loading content")
+        }
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            print("WebView - didFinish: Successfully loaded content")
+        }
+        
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            print("WebView - didFail: Failed to load content with error: \(error.localizedDescription)")
+        }
+        
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            print("WebView - didFailProvisionalNavigation: Failed to load content with error: \(error.localizedDescription)")
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -226,6 +249,4 @@ struct BookWebView: UIViewRepresentable {
             return 0
         }
     }
-}
-
-import WebKit 
+} 
