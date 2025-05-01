@@ -101,7 +101,7 @@ enum TextBlockType: String, Codable {
     case listItem
 }
 
-struct TocItem: Identifiable {
+struct TocItem: Identifiable, Codable {
     var id: String
     var title: String
     var href: String?

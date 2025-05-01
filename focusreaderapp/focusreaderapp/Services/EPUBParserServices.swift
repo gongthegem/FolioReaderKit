@@ -198,14 +198,22 @@ class DefaultTOCParsingService: TOCParsingService {
     func parseTOC(from opfURL: URL, ncxURL: URL?) -> [TocItem] {
         var tocItems: [TocItem] = []
         
+        print("Parsing TOC from EPUB file")
+        
         // First try to parse from NCX if available
         if let ncxURL = ncxURL {
+            print("Attempting to parse TOC from NCX file: \(ncxURL.path)")
             tocItems = parseNCX(from: ncxURL)
+            print("Found \(tocItems.count) TOC items from NCX")
+        } else {
+            print("No NCX file found for TOC")
         }
         
         // If no TOC items were found, try to parse from the OPF
         if tocItems.isEmpty {
+            print("Attempting to parse TOC from OPF file: \(opfURL.path)")
             tocItems = parseOPF(from: opfURL)
+            print("Found \(tocItems.count) TOC items from OPF")
         }
         
         return tocItems
@@ -214,25 +222,31 @@ class DefaultTOCParsingService: TOCParsingService {
     private func parseNCX(from ncxURL: URL) -> [TocItem] {
         guard let ncxData = try? Data(contentsOf: ncxURL),
               let xmlString = String(data: ncxData, encoding: .utf8) else {
+            print("Failed to load NCX data from \(ncxURL.path)")
             return []
         }
         
         var tocItems: [TocItem] = []
-        let pattern = #"<navPoint[^>]*id="([^"]+)"[^>]*playOrder="([^"]+)"[^>]*>[\s\S]*?<navLabel[^>]*>[\s\S]*?<text[^>]*>(.*?)</text>[\s\S]*?<content[^>]*src="([^"]+)"[^>]*/?>"#
+        
+        // More flexible pattern to match navPoint elements in NCX files
+        let pattern = #"<navPoint[^>]*id="([^"]+)".*?>\s*<navLabel.*?>\s*<text.*?>(.*?)</text>.*?<content[^>]*src="([^"]+)"[^>]*/?>"#
         
         do {
-            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
             let matches = regex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            
+            print("NCX regex found \(matches.count) matches")
             
             for (index, match) in matches.enumerated() {
                 if let idRange = Range(match.range(at: 1), in: xmlString),
-                   let _ = Range(match.range(at: 2), in: xmlString),  // playOrder
-                   let titleRange = Range(match.range(at: 3), in: xmlString),
-                   let hrefRange = Range(match.range(at: 4), in: xmlString) {
+                   let titleRange = Range(match.range(at: 2), in: xmlString),
+                   let hrefRange = Range(match.range(at: 3), in: xmlString) {
                     
                     let id = String(xmlString[idRange])
-                    let title = String(xmlString[titleRange])
+                    let title = String(xmlString[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
                     let href = String(xmlString[hrefRange])
+                    
+                    print("Found TOC item: \(title) -> \(href)")
                     
                     let tocItem = TocItem(
                         id: id,
@@ -256,15 +270,42 @@ class DefaultTOCParsingService: TOCParsingService {
     private func parseOPF(from opfURL: URL) -> [TocItem] {
         guard let opfData = try? Data(contentsOf: opfURL),
               let xmlString = String(data: opfData, encoding: .utf8) else {
+            print("Failed to load OPF data from \(opfURL.path)")
             return []
         }
         
         var tocItems: [TocItem] = []
-        let pattern = #"<itemref[^>]*idref="([^"]+)"[^>]*/?>"#
+        
+        // First try to find a manifest item that is the TOC
+        let tocManifestPattern = #"<item[^>]*id="([^"]+)"[^>]*media-type="application/x-dtbncx\+xml"[^>]*href="([^"]+)"[^>]*/?>"#
         
         do {
+            // Try to find a TOC item in the manifest
+            let tocRegex = try NSRegularExpression(pattern: tocManifestPattern, options: [])
+            let tocMatches = tocRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            
+            if let tocMatch = tocMatches.first,
+               let hrefRange = Range(tocMatch.range(at: 2), in: xmlString) {
+                let tocHref = String(xmlString[hrefRange])
+                let tocPath = opfURL.deletingLastPathComponent().appendingPathComponent(tocHref)
+                
+                print("Found TOC reference in OPF: \(tocHref)")
+                
+                // If we found a TOC reference, try to parse it directly
+                if FileManager.default.fileExists(atPath: tocPath.path) {
+                    print("Found NCX file at \(tocPath.path)")
+                    return parseNCX(from: tocPath)
+                }
+            }
+            
+            // If no TOC was found or couldn't be parsed, fall back to spine items
+            print("No TOC found in OPF, falling back to spine items")
+            let pattern = #"<itemref[^>]*idref="([^"]+)"[^>]*/?>"#
+            
             let regex = try NSRegularExpression(pattern: pattern, options: [])
             let matches = regex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            
+            print("Found \(matches.count) spine items in OPF")
             
             for (index, match) in matches.enumerated() {
                 if let idRefRange = Range(match.range(at: 1), in: xmlString) {
@@ -279,7 +320,26 @@ class DefaultTOCParsingService: TOCParsingService {
                        let hrefRange = Range(itemMatch.range(at: 1), in: xmlString) {
                         let href = String(xmlString[hrefRange])
                         let id = "toc-\(index)"
-                        let title = "Chapter \(index + 1)"
+                        
+                        // Try to extract a better title from the chapter file
+                        var title = "Chapter \(index + 1)"
+                        
+                        // Try to read the HTML file to extract the title
+                        let chapterPath = opfURL.deletingLastPathComponent().appendingPathComponent(href)
+                        if let chapterContent = try? String(contentsOf: chapterPath, encoding: .utf8) {
+                            // Look for title in the HTML
+                            let titlePattern = #"<title[^>]*>(.*?)</title>"#
+                            if let titleRegex = try? NSRegularExpression(pattern: titlePattern, options: [.dotMatchesLineSeparators]),
+                               let titleMatch = titleRegex.firstMatch(in: chapterContent, options: [], range: NSRange(chapterContent.startIndex..., in: chapterContent)),
+                               let titleRange = Range(titleMatch.range(at: 1), in: chapterContent) {
+                                let extractedTitle = String(chapterContent[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !extractedTitle.isEmpty {
+                                    title = extractedTitle
+                                }
+                            }
+                        }
+                        
+                        print("Found chapter: \(title) -> \(href)")
                         
                         let tocItem = TocItem(
                             id: id,

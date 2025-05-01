@@ -64,6 +64,8 @@ class DefaultEPUBService: EPUBService {
     
     func parseEPUB(at url: URL) -> Book? {
         do {
+            print("Starting to parse EPUB file at \(url.path)")
+            
             // Create a temporary directory
             let tempDir = try fileManager.url(
                 for: .cachesDirectory,
@@ -73,38 +75,61 @@ class DefaultEPUBService: EPUBService {
             ).appendingPathComponent(UUID().uuidString)
             
             try fileManager.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            print("Created temporary directory at \(tempDir.path)")
             
             // Extract the EPUB to the temporary directory
             let epubDirectory = try extractor.extractEPUB(at: url, to: tempDir)
+            print("Extracted EPUB to \(epubDirectory.path)")
             
             // Resolve paths for necessary files
-            guard let containerPath = pathResolver.resolveContainerPath(in: epubDirectory),
-                  let opfPath = pathResolver.resolveOPFPath(from: containerPath) else {
+            guard let containerPath = pathResolver.resolveContainerPath(in: epubDirectory) else {
+                print("Failed to find container.xml in EPUB")
+                throw NSError(domain: "EPUBParsingError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to resolve container.xml path"])
+            }
+            print("Found container.xml at \(containerPath.path)")
+            
+            guard let opfPath = pathResolver.resolveOPFPath(from: containerPath) else {
+                print("Failed to resolve OPF path from container.xml")
                 throw NSError(domain: "EPUBParsingError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to resolve OPF path"])
             }
+            print("Found OPF file at \(opfPath.path)")
             
             // Parse metadata
+            print("Parsing metadata from OPF")
             let (title, author, metadata, coverImagePath) = metadataParser.parseMetadata(from: opfPath)
+            print("Parsed metadata - Title: \(title), Author: \(author)")
             
             // Resolve NCX path for TOC
+            print("Resolving NCX path for TOC")
             let ncxPath = pathResolver.resolveNCXPath(from: opfPath)
+            if let ncxPath = ncxPath {
+                print("Found NCX file at \(ncxPath.path)")
+            } else {
+                print("No NCX file found")
+            }
             
             // Parse TOC
+            print("Parsing TOC")
             let tocItems = tocParser.parseTOC(from: opfPath, ncxURL: ncxPath)
+            print("Parsed \(tocItems.count) TOC items")
             
             // Get spine items (chapter paths)
+            print("Getting spine items (chapter paths)")
             let chapterPaths = spineService.getSpineItems(from: opfPath)
+            print("Found \(chapterPaths.count) chapters")
             
             // Load chapters
             var chapters: [Chapter] = []
             
             for (index, chapterPath) in chapterPaths.enumerated() {
                 do {
+                    print("Loading chapter \(index + 1) from \(chapterPath.path)")
                     let htmlContent = try String(contentsOf: chapterPath)
                     let chapterId = "chapter-\(index)"
                     
                     // Use chapter title from TOC if available
                     let chapterTitle = tocItems.first(where: { $0.chapterIndex == index })?.title ?? "Chapter \(index + 1)"
+                    print("Chapter \(index + 1) title: \(chapterTitle)")
                     
                     // TODO: Implement proper HTML to plain text conversion
                     let plainTextContent = htmlContent.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
@@ -130,9 +155,11 @@ class DefaultEPUBService: EPUBService {
                 coverImagePath: coverImagePath,
                 chapters: chapters,
                 metadata: metadata,
-                filePath: url.path
+                filePath: url.path,
+                tocItems: tocItems
             )
             
+            print("Successfully created book with \(chapters.count) chapters and \(tocItems.count) TOC items")
             return book
         } catch {
             print("Error parsing EPUB: \(error)")

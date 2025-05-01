@@ -79,7 +79,6 @@ class BookViewModel: ObservableObject {
     }
     
     func loadBook(_ book: Book) {
-        isLoading = true  // Set loading state at start of book loading
         currentBook = book
         
         // Load the last reading position
@@ -233,7 +232,6 @@ class BookViewModel: ObservableObject {
     
     func loadSampleBook() {
         print("Loading sample book...")
-        isLoading = true  // Set loading state at the start of sample book loading
         
         // Check if the sample book is already in the library
         if library.contains(where: { $0.title.contains("Sample") }) {
@@ -241,8 +239,6 @@ class BookViewModel: ObservableObject {
             // Sample is already loaded, just find and open it
             if let sampleBook = library.first(where: { $0.title.contains("Sample") }) {
                 loadBook(sampleBook)
-            } else {
-                isLoading = false // Reset loading state if sample book found but couldn't be loaded
             }
             return
         }
@@ -296,7 +292,6 @@ class BookViewModel: ObservableObject {
             loadEPUB(from: resourcesURL)
         } else {
             print("Could not find sample.epub at any location")
-            isLoading = false // Reset loading state if sample book couldn't be found
         }
     }
 } 

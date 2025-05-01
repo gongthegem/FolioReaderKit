@@ -1,1 +1,7 @@
 *.epub 
+*.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+ADHDReader/
+mermaidUMLGenerator/
+
+# Existing ignores below if any
+.DS_Store 

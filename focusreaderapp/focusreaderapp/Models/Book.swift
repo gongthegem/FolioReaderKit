@@ -10,9 +10,10 @@ struct Book: Identifiable, Codable {
     var metadata: BookMetadata
     var filePath: String
     var lastReadPosition: ReadingPosition?
+    var tocItems: [TocItem] = []
     
     enum CodingKeys: String, CodingKey {
-        case id, title, author, coverImagePath, metadata, filePath, lastReadPosition
+        case id, title, author, coverImagePath, metadata, filePath, lastReadPosition, tocItems
     }
     
     var coverImage: UIImage? {

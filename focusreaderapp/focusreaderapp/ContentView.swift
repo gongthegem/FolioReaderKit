@@ -13,8 +13,10 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            // Show Reader only when both book and chapter content are loaded
-            if bookViewModel.currentBook != nil && bookViewModel.currentChapterContent != nil {
+            if bookViewModel.currentBook == nil {
+                // Show the library view
+                LibraryView()
+            } else {
                 // Show the reader view
                 let container = DependencyContainer.shared
                 let readingContentVM = container.makeReadingContentViewModel()
@@ -25,17 +27,6 @@ struct ContentView: View {
                     readingContentVM: readingContentVM,
                     speedReadingVM: speedReadingVM
                 )
-            } else if bookViewModel.isLoading { 
-                // Show loading indicator while the book/chapter is processing
-                VStack {
-                    Text("Loading Book...")
-                        .font(.title)
-                    ProgressView()
-                        .padding()
-                }
-            } else {
-                // Show the library view otherwise (no book selected or loaded yet)
-                LibraryView()
             }
         }
         .onAppear {

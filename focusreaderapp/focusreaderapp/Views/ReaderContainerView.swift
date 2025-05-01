@@ -59,17 +59,8 @@ struct ReaderContainerView: View {
             }
         }
         .onAppear {
-            print("ReaderContainerView - onAppear: Loading chapter content")
-            print("Current book: \(bookViewModel.currentBook?.title ?? "nil")")
-            print("Current chapter index: \(bookViewModel.currentChapterIndex)")
-            print("Is loading: \(bookViewModel.isLoading)")
-            
             // Load current chapter for reading content view
             if let processedChapter = bookViewModel.currentChapterContent {
-                print("ReaderContainerView - onAppear: Found processed chapter, loading into ReadingContentViewModel")
-                print("Chapter title: \(processedChapter.originalChapter.title)")
-                print("Chapter has \(processedChapter.sentences.count) sentences")
-                
                 readingContentVM.loadChapter(
                     chapter: processedChapter.originalChapter,
                     options: ContentDisplayOptions(
@@ -83,15 +74,11 @@ struct ReaderContainerView: View {
                 // Setup speed reading if needed
                 if let book = bookViewModel.currentBook,
                    let lastPosition = book.lastReadPosition {
-                    print("ReaderContainerView - onAppear: Configuring speed reading with book ID \(book.id.uuidString) and sentence index \(lastPosition.sentenceIndex)")
                     speedReadingVM.configure(
                         with: book.id.uuidString,
                         initialSentenceIndex: lastPosition.sentenceIndex
                     )
                 }
-            } else {
-                print("ReaderContainerView - onAppear: ERROR - No processed chapter available from bookViewModel")
-                print("Possible causes: Book processing not complete, chapter loading failed, or ContentProcessor error")
             }
         }
     }
@@ -99,8 +86,12 @@ struct ReaderContainerView: View {
     private func getTOCItems() -> [TocItem] {
         guard let book = bookViewModel.currentBook else { return [] }
         
-        // In a real app, we'd have actual TOC data from the EPUB
-        // Here we'll create a simple TOC based on chapter titles
+        // Use the TOC items from the book if available
+        if !book.tocItems.isEmpty {
+            return book.tocItems
+        }
+        
+        // Fallback to creating a simple TOC based on chapter titles
         return book.chapters.enumerated().map { index, chapter in
             TocItem(
                 id: chapter.id,
