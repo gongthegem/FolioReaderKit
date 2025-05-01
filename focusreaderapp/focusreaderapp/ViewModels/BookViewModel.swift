@@ -227,4 +227,71 @@ class BookViewModel: ObservableObject {
         library.remove(atOffsets: indexSet)
         saveLibrary()
     }
+    
+    // MARK: - Sample Book Loading
+    
+    func loadSampleBook() {
+        print("Loading sample book...")
+        
+        // Check if the sample book is already in the library
+        if library.contains(where: { $0.title.contains("Sample") }) {
+            print("Sample book already in library, loading it")
+            // Sample is already loaded, just find and open it
+            if let sampleBook = library.first(where: { $0.title.contains("Sample") }) {
+                loadBook(sampleBook)
+            }
+            return
+        }
+        
+        // First try to get the URL to the embedded sample.epub in the bundle
+        if let sampleURL = Bundle.main.url(forResource: "sample", withExtension: "epub") {
+            print("Found sample.epub in bundle at \(sampleURL.path)")
+            // Load the EPUB file
+            loadEPUB(from: sampleURL)
+            return
+        } else {
+            print("sample.epub not found in bundle resources")
+        }
+        
+        // If not found in bundle, try the app source directory
+        let appSourceURL = URL(fileURLWithPath: Bundle.main.bundlePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("focusreaderapp")
+            .appendingPathComponent("sample.epub")
+        
+        print("Checking for sample.epub at \(appSourceURL.path)")
+        if FileManager.default.fileExists(atPath: appSourceURL.path) {
+            print("Found sample.epub in app source directory")
+            // Load the EPUB file from the source directory
+            loadEPUB(from: appSourceURL)
+            return
+        }
+        
+        // Try one more fallback location - the workspace root
+        let workspaceURL = URL(fileURLWithPath: Bundle.main.bundlePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("sample.epub")
+        
+        print("Checking for sample.epub at \(workspaceURL.path)")
+        if FileManager.default.fileExists(atPath: workspaceURL.path) {
+            print("Found sample.epub in workspace root")
+            loadEPUB(from: workspaceURL)
+            return
+        }
+        
+        // Try the Resources directory
+        let resourcesURL = URL(fileURLWithPath: Bundle.main.bundlePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("focusreaderapp")
+            .appendingPathComponent("Resources")
+            .appendingPathComponent("sample.epub")
+        
+        print("Checking for sample.epub at \(resourcesURL.path)")
+        if FileManager.default.fileExists(atPath: resourcesURL.path) {
+            print("Found sample.epub in Resources directory")
+            loadEPUB(from: resourcesURL)
+        } else {
+            print("Could not find sample.epub at any location")
+        }
+    }
 } 

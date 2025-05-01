@@ -3,11 +3,23 @@ import SwiftUI
 @main
 struct FocusReaderApp: App {
     @StateObject private var bookViewModel = DependencyContainer.shared.makeBookViewModel()
+    @State private var didCheckLibrary = false
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(bookViewModel)
+                .onAppear {
+                    if !didCheckLibrary {
+                        bookViewModel.loadLibrary()
+                        
+                        if bookViewModel.library.isEmpty {
+                            // Load the sample book if library is empty
+                            bookViewModel.loadSampleBook()
+                        }
+                        didCheckLibrary = true
+                    }
+                }
         }
     }
 }
@@ -124,7 +136,12 @@ import UniformTypeIdentifiers
 
 extension UTType {
     static var epub: UTType {
-        UTType(importedAs: "org.idpf.epub-container")
+        if let type = UTType(tag: "epub",
+                             tagClass: .filenameExtension,
+                             conformingTo: .data) {
+            return type
+        }
+        return UTType(exportedAs: "org.idpf.epub-container")
     }
 }
-#endif 
+#endif
