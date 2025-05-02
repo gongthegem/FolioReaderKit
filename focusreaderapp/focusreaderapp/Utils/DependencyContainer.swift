@@ -15,6 +15,14 @@ class DependencyContainer {
         let tocParserService = DefaultTOCParsingService()
         let spineService = DefaultEPUBSpineService()
         
+        print("Creating EPUBService with all dependencies initialized")
+        print("- zipService: \(zipService)")
+        print("- extractorService: \(extractorService)")
+        print("- pathResolverService: \(pathResolverService)")
+        print("- metadataParserService: \(metadataParserService)")
+        print("- tocParserService: \(tocParserService)")
+        print("- spineService: \(spineService)")
+        
         return DefaultEPUBService(
             extractor: extractorService,
             metadataParser: metadataParserService,

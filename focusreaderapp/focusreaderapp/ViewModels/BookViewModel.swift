@@ -43,47 +43,70 @@ class BookViewModel: ObservableObject {
         isLoading = true
         loadingError = nil
         
-        print("Starting to load EPUB from: \(url.path)")
+        print("\n======== Starting EPUB loading process ========")
+        print("Loading EPUB from: \(url.path)")
         
         do {
             // Check if the file exists
             guard fileManager.fileExists(atPath: url.path) else {
-                print("EPUB file does not exist at path: \(url.path)")
+                print("❌ EPUB file does not exist at path: \(url.path)")
                 loadingError = "File not found at \(url.path)"
                 isLoading = false
                 return
             }
             
-            print("Parsing EPUB using epubService")
+            // Get file size
+            if let fileAttributes = try? fileManager.attributesOfItem(atPath: url.path),
+               let fileSize = fileAttributes[.size] as? Int {
+                print("EPUB file size: \(fileSize) bytes")
+            }
+            
+            print("Parsing EPUB using epubService...")
             if let book = epubService.parseEPUB(at: url) {
-                print("Successfully parsed EPUB: \(book.title) by \(book.author) with \(book.chapters.count) chapters")
+                print("\n======== EPUB parsing success ========")
+                print("Successfully parsed EPUB:")
+                print("- Title: \(book.title)")
+                print("- Author: \(book.author)")
+                print("- Chapters: \(book.chapters.count)")
+                print("- File path: \(book.filePath)")
+                
+                if book.chapters.isEmpty {
+                    print("⚠️ WARNING: Book has 0 chapters!")
+                } else {
+                    print("Chapter titles:")
+                    for (index, chapter) in book.chapters.enumerated() {
+                        print("- Chapter \(index+1): \(chapter.title) (HTML: \(chapter.htmlContent.count) bytes, Plain: \(chapter.plainTextContent.count) bytes)")
+                    }
+                }
                 
                 // Save to book storage if not already there
                 if !bookStorage.hasExtractedBook(id: book.id.uuidString) {
-                    print("Saving book to storage")
+                    print("Saving book to storage with ID \(book.id.uuidString)")
                     try bookStorage.saveExtractedBook(from: url, withId: book.id.uuidString)
                     try bookStorage.saveBookMetadata(book)
+                    print("✅ Book saved to storage successfully")
                 } else {
-                    print("Book already exists in storage")
+                    print("Book already exists in storage with ID \(book.id.uuidString)")
                 }
                 
                 // Add to library if not already there
                 if !library.contains(where: { $0.id == book.id }) {
                     library.append(book)
-                    print("Added book to library")
+                    print("✅ Added book to library (library now has \(library.count) books)")
                 } else {
                     print("Book already in library")
                 }
                 
                 // Load the book
+                print("Loading book into reader...")
                 loadBook(book)
             } else {
-                print("Failed to parse EPUB file")
+                print("❌ Failed to parse EPUB file")
                 loadingError = "Failed to parse EPUB file"
                 isLoading = false
             }
         } catch {
-            print("Error loading EPUB: \(error.localizedDescription)")
+            print("❌ Error loading EPUB: \(error.localizedDescription)")
             loadingError = "Error loading EPUB: \(error.localizedDescription)"
             isLoading = false
         }
@@ -110,40 +133,63 @@ class BookViewModel: ObservableObject {
     
     func loadChapter(at index: Int) {
         guard let book = currentBook else {
-            print("Cannot load chapter: No current book")
+            print("❌ Cannot load chapter: No current book")
             return
         }
         
         guard index >= 0 else {
-            print("Cannot load chapter: Invalid index \(index) (less than 0)")
+            print("❌ Cannot load chapter: Invalid index \(index) (less than 0)")
             return
         }
         
         guard index < book.chapters.count else {
-            print("Cannot load chapter: Invalid index \(index) (book has \(book.chapters.count) chapters)")
+            print("❌ Cannot load chapter: Invalid index \(index) (book has \(book.chapters.count) chapters)")
             return
         }
         
-        print("Loading chapter at index \(index) from book with \(book.chapters.count) chapters")
+        print("\n======== Loading chapter at index \(index) ========")
+        print("Book: \(book.title)")
+        print("Total chapters: \(book.chapters.count)")
+        print("Current chapter index: \(index)")
         
         // Save current chapter position before switching
         if let currentSentenceIndex = currentChapterContent?.sentences.count ?? 0 > 0 ? 
             getCurrentSentenceIndex() : nil {
+            print("Saving current reading position at chapter \(currentChapterIndex), sentence \(currentSentenceIndex)")
             updateChapterPosition(currentChapterIndex, sentenceIndex: currentSentenceIndex)
         }
         
         currentChapterIndex = index
         let chapter = book.chapters[index]
         
-        print("Processing chapter: \(chapter.title) with \(chapter.htmlContent.count) bytes of HTML content")
+        print("\nProcessing chapter:")
+        print("- Title: \(chapter.title)")
+        print("- ID: \(chapter.id)")
+        print("- HTML content length: \(chapter.htmlContent.count) bytes")
+        print("- Plain text length: \(chapter.plainTextContent.count) bytes")
+        print("- Images: \(chapter.images.count)")
+        
+        if chapter.htmlContent.isEmpty {
+            print("⚠️ WARNING: Chapter has empty HTML content!")
+            print("First 100 characters of HTML: \(chapter.htmlContent.prefix(100))")
+        }
         
         // Process the chapter
+        print("\nProcessing chapter with ContentProcessor...")
         let processedChapter = ContentProcessor.shared.processChapter(
             chapter: chapter,
             fontSize: settings.fontSize
         )
         
-        print("Chapter processed with \(processedChapter.sentences.count) sentences")
+        print("Chapter processed:")
+        print("- Sentences: \(processedChapter.sentences.count)")
+        print("- Processed HTML length: \(processedChapter.processedHTMLContent.count) bytes")
+        
+        if processedChapter.sentences.isEmpty {
+            print("⚠️ WARNING: Processed chapter has 0 sentences!")
+        } else {
+            print("First sentence: \(processedChapter.sentences.first?.prefix(50) ?? "")")
+        }
         
         currentChapterContent = processedChapter
         
@@ -160,6 +206,7 @@ class BookViewModel: ObservableObject {
             )
         }
         
+        print("✅ Chapter loading complete")
         isLoading = false
     }
     
@@ -316,7 +363,7 @@ class BookViewModel: ObservableObject {
     // MARK: - Sample Book Loading
     
     func loadSampleBook() {
-        print("Loading sample book...")
+        print("\n======== Loading sample book ========")
         
         // Check if the sample book is already in the library
         if library.contains(where: { $0.title.contains("Sample") }) {
@@ -328,55 +375,62 @@ class BookViewModel: ObservableObject {
             return
         }
         
-        // First try to get the URL to the embedded sample.epub in the bundle
+        // First try to get the URL to the embedded sample.epub in the main bundle
         if let sampleURL = Bundle.main.url(forResource: "sample", withExtension: "epub") {
-            print("Found sample.epub in bundle at \(sampleURL.path)")
+            print("Found sample.epub in main bundle at \(sampleURL.path)")
             // Load the EPUB file
             loadEPUB(from: sampleURL)
             return
         } else {
-            print("sample.epub not found in bundle resources")
+            print("sample.epub not found in main bundle resources")
         }
         
-        // If not found in bundle, try the app source directory
-        let appSourceURL = URL(fileURLWithPath: Bundle.main.bundlePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("focusreaderapp")
-            .appendingPathComponent("sample.epub")
-        
-        print("Checking for sample.epub at \(appSourceURL.path)")
-        if FileManager.default.fileExists(atPath: appSourceURL.path) {
-            print("Found sample.epub in app source directory")
-            // Load the EPUB file from the source directory
-            loadEPUB(from: appSourceURL)
-            return
-        }
-        
-        // Try one more fallback location - the workspace root
-        let workspaceURL = URL(fileURLWithPath: Bundle.main.bundlePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("sample.epub")
-        
-        print("Checking for sample.epub at \(workspaceURL.path)")
-        if FileManager.default.fileExists(atPath: workspaceURL.path) {
-            print("Found sample.epub in workspace root")
-            loadEPUB(from: workspaceURL)
-            return
-        }
-        
-        // Try the Resources directory
-        let resourcesURL = URL(fileURLWithPath: Bundle.main.bundlePath)
-            .deletingLastPathComponent()
-            .appendingPathComponent("focusreaderapp")
-            .appendingPathComponent("Resources")
-            .appendingPathComponent("sample.epub")
-        
-        print("Checking for sample.epub at \(resourcesURL.path)")
-        if FileManager.default.fileExists(atPath: resourcesURL.path) {
-            print("Found sample.epub in Resources directory")
+        // Try looking in the app's Resources directory
+        let resourcesURL = Bundle.main.resourceURL?.appendingPathComponent("Resources/sample.epub")
+        if let resourcesURL = resourcesURL, fileManager.fileExists(atPath: resourcesURL.path) {
+            print("Found sample.epub in Resources directory at \(resourcesURL.path)")
             loadEPUB(from: resourcesURL)
-        } else {
-            print("Could not find sample.epub at any location")
+            return
+        } else if let resourcesURL = resourcesURL {
+            print("sample.epub not found at expected Resources path: \(resourcesURL.path)")
         }
+        
+        // Look for the file in the project directory
+        let sourceURL = URL(fileURLWithPath: Bundle.main.bundlePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("focusreaderapp/Resources/sample.epub")
+        
+        print("Checking for sample.epub at \(sourceURL.path)")
+        if fileManager.fileExists(atPath: sourceURL.path) {
+            print("Found sample.epub in project directory")
+            loadEPUB(from: sourceURL)
+            return
+        }
+        
+        // Last resort: Search for the file in common locations
+        print("Searching for sample.epub file...")
+        
+        let possibleLocations = [
+            Bundle.main.bundlePath,
+            Bundle.main.resourcePath,
+            Bundle.main.bundlePath + "/Resources",
+            Bundle.main.bundlePath + "/focusreaderapp/Resources",
+            Bundle.main.bundlePath + "/../focusreaderapp/Resources",
+            FileManager.default.currentDirectoryPath,
+            FileManager.default.currentDirectoryPath + "/focusreaderapp/Resources"
+        ].compactMap { $0 } // Filter out any nil paths
+        
+        for location in possibleLocations {
+            let testPath = location + "/sample.epub"
+            print("Testing path: \(testPath)")
+            if fileManager.fileExists(atPath: testPath) {
+                print("✅ Found sample.epub at: \(testPath)")
+                loadEPUB(from: URL(fileURLWithPath: testPath))
+                return
+            }
+        }
+        
+        print("❌ Could not find sample.epub file in any expected location")
+        loadingError = "Could not find sample book file"
     }
 } 
