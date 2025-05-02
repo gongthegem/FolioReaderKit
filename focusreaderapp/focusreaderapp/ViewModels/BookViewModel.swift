@@ -43,27 +43,47 @@ class BookViewModel: ObservableObject {
         isLoading = true
         loadingError = nil
         
+        print("Starting to load EPUB from: \(url.path)")
+        
         do {
-            // Parse the book
+            // Check if the file exists
+            guard fileManager.fileExists(atPath: url.path) else {
+                print("EPUB file does not exist at path: \(url.path)")
+                loadingError = "File not found at \(url.path)"
+                isLoading = false
+                return
+            }
+            
+            print("Parsing EPUB using epubService")
             if let book = epubService.parseEPUB(at: url) {
+                print("Successfully parsed EPUB: \(book.title) by \(book.author) with \(book.chapters.count) chapters")
+                
                 // Save to book storage if not already there
                 if !bookStorage.hasExtractedBook(id: book.id.uuidString) {
+                    print("Saving book to storage")
                     try bookStorage.saveExtractedBook(from: url, withId: book.id.uuidString)
                     try bookStorage.saveBookMetadata(book)
+                } else {
+                    print("Book already exists in storage")
                 }
                 
                 // Add to library if not already there
                 if !library.contains(where: { $0.id == book.id }) {
                     library.append(book)
+                    print("Added book to library")
+                } else {
+                    print("Book already in library")
                 }
                 
                 // Load the book
                 loadBook(book)
             } else {
+                print("Failed to parse EPUB file")
                 loadingError = "Failed to parse EPUB file"
                 isLoading = false
             }
         } catch {
+            print("Error loading EPUB: \(error.localizedDescription)")
             loadingError = "Error loading EPUB: \(error.localizedDescription)"
             isLoading = false
         }
@@ -89,9 +109,22 @@ class BookViewModel: ObservableObject {
     // MARK: - Chapter Navigation
     
     func loadChapter(at index: Int) {
-        guard let book = currentBook, index >= 0, index < book.chapters.count else {
+        guard let book = currentBook else {
+            print("Cannot load chapter: No current book")
             return
         }
+        
+        guard index >= 0 else {
+            print("Cannot load chapter: Invalid index \(index) (less than 0)")
+            return
+        }
+        
+        guard index < book.chapters.count else {
+            print("Cannot load chapter: Invalid index \(index) (book has \(book.chapters.count) chapters)")
+            return
+        }
+        
+        print("Loading chapter at index \(index) from book with \(book.chapters.count) chapters")
         
         // Save current chapter position before switching
         if let currentSentenceIndex = currentChapterContent?.sentences.count ?? 0 > 0 ? 
@@ -102,17 +135,22 @@ class BookViewModel: ObservableObject {
         currentChapterIndex = index
         let chapter = book.chapters[index]
         
+        print("Processing chapter: \(chapter.title) with \(chapter.htmlContent.count) bytes of HTML content")
+        
         // Process the chapter
         let processedChapter = ContentProcessor.shared.processChapter(
             chapter: chapter,
             fontSize: settings.fontSize
         )
         
+        print("Chapter processed with \(processedChapter.sentences.count) sentences")
+        
         currentChapterContent = processedChapter
         
         // If there's a saved position for this chapter, restore it
         if let position = book.lastReadPosition {
             let sentenceIndex = position.sentenceIndexForChapter(index)
+            print("Restoring reading position to sentence \(sentenceIndex)")
             
             // Update the reading content view
             NotificationCenter.default.post(

@@ -367,16 +367,22 @@ class DefaultEPUBSpineService: EPUBSpineService {
     func getSpineItems(from opfURL: URL) -> [URL] {
         guard let opfData = try? Data(contentsOf: opfURL),
               let xmlString = String(data: opfData, encoding: .utf8) else {
+            print("Failed to read OPF file for spine items")
             return []
         }
         
         var spineItems: [URL] = []
+        let baseDir = opfURL.deletingLastPathComponent()
         
         do {
+            print("Getting spine items from OPF at \(opfURL.path)")
+            
             // Find spine itemrefs
             let itemRefPattern = #"<itemref[^>]*idref="([^"]+)"[^>]*/?>"#
             let itemRefRegex = try NSRegularExpression(pattern: itemRefPattern, options: [])
             let itemRefMatches = itemRefRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            
+            print("Found \(itemRefMatches.count) itemref elements in spine")
             
             // Extract each ID reference from the spine
             var idRefs: [String] = []
@@ -384,6 +390,7 @@ class DefaultEPUBSpineService: EPUBSpineService {
                 if let idRefRange = Range(match.range(at: 1), in: xmlString) {
                     let idRef = String(xmlString[idRefRange])
                     idRefs.append(idRef)
+                    print("Found spine item idref: \(idRef)")
                 }
             }
             
@@ -396,15 +403,62 @@ class DefaultEPUBSpineService: EPUBSpineService {
                 if let itemMatch = itemMatches.first,
                    let hrefRange = Range(itemMatch.range(at: 1), in: xmlString) {
                     let href = String(xmlString[hrefRange])
-                    let baseDir = opfURL.deletingLastPathComponent()
                     let chapterURL = baseDir.appendingPathComponent(href)
-                    spineItems.append(chapterURL)
+                    
+                    // Verify file exists before adding
+                    if FileManager.default.fileExists(atPath: chapterURL.path) {
+                        print("Found chapter file: \(chapterURL.path)")
+                        spineItems.append(chapterURL)
+                    } else {
+                        print("Warning: Chapter file does not exist: \(chapterURL.path)")
+                    }
                 }
+            }
+            
+            print("Successfully found \(spineItems.count) spine items")
+            
+            // If we didn't find any spine items, fall back to using the manifest items
+            if spineItems.isEmpty {
+                print("No spine items found, falling back to manifest items")
+                spineItems = fallbackToManifestItems(opfURL: opfURL, xmlString: xmlString)
             }
         } catch {
             print("Error getting spine items: \(error)")
         }
         
         return spineItems
+    }
+    
+    private func fallbackToManifestItems(opfURL: URL, xmlString: String) -> [URL] {
+        var manifestItems: [URL] = []
+        let baseDir = opfURL.deletingLastPathComponent()
+        
+        do {
+            // Look for XHTML items in the manifest
+            let manifestPattern = #"<item[^>]*href="([^"]+)"[^>]*media-type="application/xhtml\+xml"[^>]*/?>"#
+            let manifestRegex = try NSRegularExpression(pattern: manifestPattern, options: [])
+            let manifestMatches = manifestRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            
+            print("Found \(manifestMatches.count) XHTML items in manifest")
+            
+            for match in manifestMatches {
+                if let hrefRange = Range(match.range(at: 1), in: xmlString) {
+                    let href = String(xmlString[hrefRange])
+                    let itemURL = baseDir.appendingPathComponent(href)
+                    
+                    // Verify file exists before adding
+                    if FileManager.default.fileExists(atPath: itemURL.path) {
+                        print("Found manifest item file: \(itemURL.path)")
+                        manifestItems.append(itemURL)
+                    } else {
+                        print("Warning: Manifest item file does not exist: \(itemURL.path)")
+                    }
+                }
+            }
+        } catch {
+            print("Error finding manifest items: \(error)")
+        }
+        
+        return manifestItems
     }
 } 

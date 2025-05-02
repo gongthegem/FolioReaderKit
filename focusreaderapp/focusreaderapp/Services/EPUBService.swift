@@ -116,7 +116,7 @@ class DefaultEPUBService: EPUBService {
             // Get spine items (chapter paths)
             print("Getting spine items (chapter paths)")
             let chapterPaths = spineService.getSpineItems(from: opfPath)
-            print("Found \(chapterPaths.count) chapters")
+            print("Found \(chapterPaths.count) spine items")
             
             // Load chapters
             var chapters: [Chapter] = []
@@ -124,26 +124,108 @@ class DefaultEPUBService: EPUBService {
             for (index, chapterPath) in chapterPaths.enumerated() {
                 do {
                     print("Loading chapter \(index + 1) from \(chapterPath.path)")
+                    
+                    guard fileManager.fileExists(atPath: chapterPath.path) else {
+                        print("Chapter file does not exist: \(chapterPath.path)")
+                        continue
+                    }
+                    
                     let htmlContent = try String(contentsOf: chapterPath)
                     let chapterId = "chapter-\(index)"
                     
                     // Use chapter title from TOC if available
-                    let chapterTitle = tocItems.first(where: { $0.chapterIndex == index })?.title ?? "Chapter \(index + 1)"
+                    let chapterTitle: String
+                    if let tocItem = tocItems.first(where: { $0.chapterIndex == index }) {
+                        chapterTitle = tocItem.title
+                    } else if let tocItem = tocItems.first(where: { 
+                        guard let href = $0.href else { return false }
+                        return chapterPath.lastPathComponent.contains(href) 
+                    }) {
+                        chapterTitle = tocItem.title
+                    } else {
+                        chapterTitle = "Chapter \(index + 1)"
+                    }
                     print("Chapter \(index + 1) title: \(chapterTitle)")
                     
-                    // TODO: Implement proper HTML to plain text conversion
+                    // Process HTML content to extract blocks and plain text
                     let plainTextContent = htmlContent.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                    
+                    // Extract images from the chapter
+                    var chapterImages: [ChapterImage] = []
+                    do {
+                        let pattern = #"<img[^>]*src="([^"]+)"[^>]*>"#
+                        let regex = try NSRegularExpression(pattern: pattern, options: [])
+                        let matches = regex.matches(in: htmlContent, options: [], range: NSRange(htmlContent.startIndex..., in: htmlContent))
+                        
+                        for (imgIndex, match) in matches.enumerated() {
+                            if let srcRange = Range(match.range(at: 1), in: htmlContent) {
+                                let src = String(htmlContent[srcRange])
+                                let imagePath = chapterPath.deletingLastPathComponent().appendingPathComponent(src).path
+                                
+                                if fileManager.fileExists(atPath: imagePath) {
+                                    let image = ChapterImage(
+                                        id: "img-\(index)-\(imgIndex)",
+                                        name: src,
+                                        caption: nil,
+                                        imagePath: imagePath,
+                                        altText: nil,
+                                        sourceURL: nil
+                                    )
+                                    chapterImages.append(image)
+                                }
+                            }
+                        }
+                    } catch {
+                        print("Error extracting images: \(error)")
+                    }
                     
                     let chapter = Chapter(
                         id: chapterId,
                         title: chapterTitle,
                         htmlContent: htmlContent,
-                        plainTextContent: plainTextContent
+                        plainTextContent: plainTextContent,
+                        blocks: [],
+                        images: chapterImages
                     )
                     
                     chapters.append(chapter)
                 } catch {
                     print("Error parsing chapter at \(chapterPath): \(error)")
+                }
+            }
+            
+            // If no chapters were loaded, try using the resolver's chapter paths as a fallback
+            if chapters.isEmpty {
+                print("No chapters loaded from spine, trying pathResolver as fallback")
+                let fallbackChapterPaths = pathResolver.resolveChapterPaths(from: opfPath)
+                
+                for (index, chapterPath) in fallbackChapterPaths.enumerated() {
+                    do {
+                        print("Loading fallback chapter \(index + 1) from \(chapterPath.path)")
+                        
+                        guard fileManager.fileExists(atPath: chapterPath.path) else {
+                            print("Fallback chapter file does not exist: \(chapterPath.path)")
+                            continue
+                        }
+                        
+                        let htmlContent = try String(contentsOf: chapterPath)
+                        let chapterId = "chapter-\(index)"
+                        let chapterTitle = "Chapter \(index + 1)"
+                        
+                        // Process HTML content to extract plain text
+                        let plainTextContent = htmlContent.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                        
+                        let chapter = Chapter(
+                            id: chapterId,
+                            title: chapterTitle,
+                            htmlContent: htmlContent,
+                            plainTextContent: plainTextContent
+                        )
+                        
+                        chapters.append(chapter)
+                    } catch {
+                        print("Error parsing fallback chapter at \(chapterPath): \(error)")
+                    }
                 }
             }
             

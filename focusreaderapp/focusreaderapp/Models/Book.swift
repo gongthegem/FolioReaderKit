@@ -13,12 +13,26 @@ struct Book: Identifiable, Codable {
     var tocItems: [TocItem] = []
     
     enum CodingKeys: String, CodingKey {
-        case id, title, author, coverImagePath, metadata, filePath, lastReadPosition, tocItems
+        case id, title, author, coverImagePath, chapters, metadata, filePath, lastReadPosition, tocItems
     }
     
     var coverImage: UIImage? {
         guard let coverPath = coverImagePath else { return nil }
         return UIImage(contentsOfFile: coverPath)
+    }
+    
+    // Add proper encoding/decoding for chapters
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        author = try container.decode(String.self, forKey: .author)
+        coverImagePath = try container.decodeIfPresent(String.self, forKey: .coverImagePath)
+        chapters = try container.decodeIfPresent([Chapter].self, forKey: .chapters) ?? []
+        metadata = try container.decode(BookMetadata.self, forKey: .metadata)
+        filePath = try container.decode(String.self, forKey: .filePath)
+        lastReadPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .lastReadPosition)
+        tocItems = try container.decodeIfPresent([TocItem].self, forKey: .tocItems) ?? []
     }
 }
 
