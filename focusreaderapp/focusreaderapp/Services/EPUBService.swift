@@ -130,7 +130,7 @@ class DefaultEPUBService: EPUBService {
                         continue
                     }
                     
-                    let htmlContent = try String(contentsOf: chapterPath)
+                    let htmlContent = try String(contentsOf: chapterPath, encoding: .utf8)
                     let chapterId = "chapter-\(index)"
                     
                     // Use chapter title from TOC if available
@@ -208,7 +208,7 @@ class DefaultEPUBService: EPUBService {
                             continue
                         }
                         
-                        let htmlContent = try String(contentsOf: chapterPath)
+                        let htmlContent = try String(contentsOf: chapterPath, encoding: .utf8)
                         let chapterId = "chapter-\(index)"
                         let chapterTitle = "Chapter \(index + 1)"
                         
@@ -278,31 +278,34 @@ class DefaultEPUBZipService: EPUBZipService {
         try FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true)
         
         // Use ZIPFoundation to extract the archive
-        guard let archive = Archive(url: sourceURL, accessMode: .read) else {
-            throw NSError(domain: "ZipError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to open archive"])
-        }
-        
-        for entry in archive {
-            let entryURL = destinationURL.appendingPathComponent(entry.path)
+        do {
+            let archive = try Archive(url: sourceURL, accessMode: .read)
             
-            // Create directory if needed
-            if entry.type == .directory {
-                try FileManager.default.createDirectory(at: entryURL, withIntermediateDirectories: true)
-            } else {
-                // Extract file
-                do {
-                    // Create parent directory if needed
-                    let parentDir = entryURL.deletingLastPathComponent()
-                    try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
-                    
-                    // Extract the file
-                    _ = try archive.extract(entry, to: entryURL)
-                } catch {
-                    print("Error extracting \(entry.path): \(error)")
+            for entry in archive {
+                let entryURL = destinationURL.appendingPathComponent(entry.path)
+                
+                // Create directory if needed
+                if entry.type == .directory {
+                    try FileManager.default.createDirectory(at: entryURL, withIntermediateDirectories: true)
+                } else {
+                    // Extract file
+                    do {
+                        // Create parent directory if needed
+                        let parentDir = entryURL.deletingLastPathComponent()
+                        try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+                        
+                        // Extract the file
+                        _ = try archive.extract(entry, to: entryURL)
+                    } catch {
+                        print("Error extracting \(entry.path): \(error)")
+                    }
                 }
             }
+            
+            return true
+        } catch {
+            print("Error opening archive: \(error)")
+            throw error
         }
-        
-        return true
     }
 } 

@@ -21,6 +21,21 @@ struct Book: Identifiable, Codable {
         return UIImage(contentsOfFile: coverPath)
     }
     
+    // Standard initializer
+    init(id: UUID, title: String, author: String, coverImagePath: String? = nil, 
+         chapters: [Chapter] = [], metadata: BookMetadata, filePath: String,
+         lastReadPosition: ReadingPosition? = nil, tocItems: [TocItem] = []) {
+        self.id = id
+        self.title = title
+        self.author = author
+        self.coverImagePath = coverImagePath
+        self.chapters = chapters
+        self.metadata = metadata
+        self.filePath = filePath
+        self.lastReadPosition = lastReadPosition
+        self.tocItems = tocItems
+    }
+    
     // Add proper encoding/decoding for chapters
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

@@ -50,16 +50,18 @@ class ContentProcessor {
             
             if sentenceSeparators.contains(char) {
                 // Check if the next character is a space or newline or end of string
-                if let nextIndex = text.firstIndex(of: char)?.encodedOffset, 
-                   nextIndex + 1 < text.count, 
-                   [" ", "\n"].contains(text[text.index(text.startIndex, offsetBy: nextIndex + 1)]) {
-                    
-                    // Trim whitespace and add to sentences
-                    let trimmed = currentSentence.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        sentences.append(trimmed)
+                if let nextIndex = text.firstIndex(of: char) {
+                    if nextIndex < text.endIndex, 
+                       let afterCharIndex = text.index(nextIndex, offsetBy: 1, limitedBy: text.endIndex),
+                       [" ", "\n"].contains(text[afterCharIndex]) {
+                        
+                        // Trim whitespace and add to sentences
+                        let trimmed = currentSentence.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            sentences.append(trimmed)
+                        }
+                        currentSentence = ""
                     }
-                    currentSentence = ""
                 }
             }
         }

@@ -17,7 +17,7 @@ struct ContentDisplayOptions {
         horizontalPadding: CGFloat = 20,
         highlightedSentenceIndex: Int? = nil,
         highlightColor: Color? = .yellow,
-        highlightMode: HighlightMode? = .none,
+        highlightMode: HighlightMode? = HighlightMode.none,
         baseURL: URL? = nil,
         darkMode: Bool = false
     ) {

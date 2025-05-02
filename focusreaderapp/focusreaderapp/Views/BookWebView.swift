@@ -16,10 +16,14 @@ struct BookWebView: UIViewRepresentable {
     
     func makeUIView(context: Context) -> WKWebView {
         let preferences = WKPreferences()
-        preferences.javaScriptEnabled = true
         
         let configuration = WKWebViewConfiguration()
         configuration.preferences = preferences
+        
+        // Set up JavaScript support
+        let webpagePreferences = WKWebpagePreferences()
+        webpagePreferences.allowsContentJavaScript = true
+        configuration.defaultWebpagePreferences = webpagePreferences
         
         // Add message handler for taps
         configuration.userContentController.add(context.coordinator, name: "sentenceTapped")

@@ -86,7 +86,7 @@ class ReadingContentViewModel: ObservableObject {
         var options = displayOptions
         switch mode {
         case .standard:
-            options.highlightMode = .none
+            options.highlightMode = HighlightMode.none
         case .inlineHighlightReading:
             options.highlightMode = .inlineSentence
             options.highlightedSentenceIndex = currentSentenceIndex
