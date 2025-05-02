@@ -7,7 +7,7 @@ struct ContentDisplayOptions {
     var horizontalPadding: CGFloat
     var highlightedSentenceIndex: Int?
     var highlightColor: Color?
-    var speedReadingMode: SpeedReaderMode?
+    var highlightMode: HighlightMode?
     var baseURL: URL?
     var darkMode: Bool
     
@@ -17,7 +17,7 @@ struct ContentDisplayOptions {
         horizontalPadding: CGFloat = 20,
         highlightedSentenceIndex: Int? = nil,
         highlightColor: Color? = .yellow,
-        speedReadingMode: SpeedReaderMode? = nil,
+        highlightMode: HighlightMode? = .none,
         baseURL: URL? = nil,
         darkMode: Bool = false
     ) {
@@ -26,7 +26,7 @@ struct ContentDisplayOptions {
         self.horizontalPadding = horizontalPadding
         self.highlightedSentenceIndex = highlightedSentenceIndex
         self.highlightColor = highlightColor
-        self.speedReadingMode = speedReadingMode
+        self.highlightMode = highlightMode
         self.baseURL = baseURL
         self.darkMode = darkMode
     }

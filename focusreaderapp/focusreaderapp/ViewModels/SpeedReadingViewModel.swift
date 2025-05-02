@@ -11,6 +11,7 @@ class SpeedReadingViewModel: ObservableObject {
     @Published var wordsPerMinute: Int = 200
     @Published var currentSentenceIndex: Int = 0
     @Published var speedReadingMode: SpeedReaderMode = .sentence
+    @Published var currentChapterIndex: Int = 0
     
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -33,8 +34,9 @@ class SpeedReadingViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func configure(with bookId: String, initialSentenceIndex: Int = 0) {
+    func configure(with bookId: String, chapterIndex: Int, initialSentenceIndex: Int = 0) {
         self.bookId = bookId
+        self.currentChapterIndex = chapterIndex
         self.currentSentenceIndex = initialSentenceIndex
     }
     
@@ -45,6 +47,8 @@ class SpeedReadingViewModel: ObservableObject {
             startPlaybackTimer()
         } else {
             stopPlaybackTimer()
+            // Save progress when paused
+            saveProgress()
         }
     }
     
@@ -89,8 +93,25 @@ class SpeedReadingViewModel: ObservableObject {
         guard let bookId = bookId,
               let progressManager = progressManager else { return }
         
-        if let readingContentVM = readingContentVM {
-            progressManager.updateLastReadDate(bookId: bookId)
+        // Retrieve the existing position if available
+        if var position = progressManager.loadProgress(bookId: bookId) {
+            // Update the main position fields
+            position.chapterIndex = currentChapterIndex
+            position.sentenceIndex = currentSentenceIndex
+            
+            // Also update the chapter-specific position
+            position.updateChapterPosition(chapter: currentChapterIndex, sentence: currentSentenceIndex)
+            
+            // Save the updated position
+            progressManager.saveProgress(bookId: bookId, position: position)
+        } else {
+            // Create a new position
+            let position = ReadingPosition(
+                chapterIndex: currentChapterIndex,
+                sentenceIndex: currentSentenceIndex,
+                lastReadDate: Date()
+            )
+            progressManager.saveProgress(bookId: bookId, position: position)
         }
     }
     

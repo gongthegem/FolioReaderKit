@@ -3,30 +3,19 @@ import SwiftUI
 struct ReaderContainerView: View {
     @ObservedObject var bookViewModel: BookViewModel
     @ObservedObject var readingContentVM: ReadingContentViewModel
-    @ObservedObject var speedReadingVM: SpeedReadingViewModel
     
-    @State private var readerMode: ReaderMode = .standard
     @State private var showSettings: Bool = false
     @State private var showTOC: Bool = false
     
     var body: some View {
         ZStack {
-            if readerMode == .standard {
-                StandardReaderView(
-                    bookViewModel: bookViewModel,
-                    readingContentVM: readingContentVM,
-                    onShowSettings: { showSettings = true },
-                    onShowTOC: { showTOC = true },
-                    onModeChange: { readerMode = $0 }
-                )
-            } else {
-                SpeedReaderView(
-                    speedReadingVM: speedReadingVM,
-                    readingContentVM: readingContentVM,
-                    onShowSettings: { showSettings = true },
-                    onExit: { readerMode = .standard }
-                )
-            }
+            UnifiedReaderView(
+                bookViewModel: bookViewModel,
+                readingContentVM: readingContentVM,
+                onShowSettings: { showSettings = true },
+                onShowTOC: { showTOC = true },
+                onExitToLibrary: { bookViewModel.exitToLibrary() }
+            )
             
             // Overlays
             if showSettings {
@@ -57,6 +46,22 @@ struct ReaderContainerView: View {
                 .zIndex(2)
                 .animation(.spring(), value: showTOC)
             }
+            
+            // Library button in top-right corner
+            VStack {
+                HStack {
+                    Spacer()
+                    
+                    LibraryButton(onExitToLibrary: {
+                        bookViewModel.exitToLibrary()
+                    })
+                    .padding(.top, 50)
+                    .padding(.trailing, 16)
+                }
+                
+                Spacer()
+            }
+            .zIndex(3)
         }
         .onAppear {
             // Load current chapter for reading content view
@@ -71,13 +76,13 @@ struct ReaderContainerView: View {
                     )
                 )
                 
-                // Setup speed reading if needed
-                if let book = bookViewModel.currentBook,
-                   let lastPosition = book.lastReadPosition {
-                    speedReadingVM.configure(
-                        with: book.id.uuidString,
-                        initialSentenceIndex: lastPosition.sentenceIndex
-                    )
+                // Setup initial position
+                if let book = bookViewModel.currentBook {
+                    let chapterIndex = bookViewModel.currentChapterIndex
+                    let sentenceIndex = book.lastReadPosition?.sentenceIndexForChapter(chapterIndex) ?? 0
+                    
+                    // Set initial sentence
+                    readingContentVM.moveToSentence(index: sentenceIndex)
                 }
             }
         }

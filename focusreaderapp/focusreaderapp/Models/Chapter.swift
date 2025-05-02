@@ -118,8 +118,3 @@ struct TocItem: Identifiable, Codable {
         self.chapterIndex = chapterIndex
     }
 }
-
-enum MarginSide {
-    case left
-    case right
-} 

@@ -326,12 +326,25 @@ classDiagram
         +body: View
     }
 
-    class NavigationControls {
+    class BaseNavigationControls {
         <<View>>
-        +showPrevious: Bool
-        +showNext: Bool
         +onPrevious: () -> Void
         +onNext: () -> Void
+        +body: View
+    }
+
+    class StandardNavigationControls {
+        <<View>>
+        +currentIndex: Int
+        +totalCount: Int
+        +body: View
+    }
+
+    class InlineHighlightControls {
+        <<View>>
+        +currentSentenceIndex: Int
+        +totalSentences: Int
+        +onExitHighlightMode: () -> Void
         +body: View
     }
 
@@ -344,7 +357,10 @@ classDiagram
     ReaderContainerView --> TOCView : displays
     
     StandardReaderView --> BookWebView : displays
-    StandardReaderView --> NavigationControls : displays
+    StandardReaderView --> StandardNavigationControls : displays
     
     SpeedReaderView --> BookWebView : displays
-    SpeedReaderView --> NavigationControls : displays
+    SpeedReaderView --> InlineHighlightControls : displays
+    
+    BaseNavigationControls <|-- StandardNavigationControls : extends
+    BaseNavigationControls <|-- InlineHighlightControls : extends

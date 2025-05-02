@@ -31,6 +31,10 @@ class DependencyContainer {
         return ReadingProgressManager()
     }()
     
+    lazy var bookStorage: BookStorageService = {
+        return FileSystemBookStorageService()
+    }()
+    
     // MARK: - Settings
     
     lazy var readerSettings: ReaderSettings = {
@@ -45,6 +49,7 @@ class DependencyContainer {
         return BookViewModel(
             epubService: epubService,
             progressManager: readingProgressManager,
+            bookStorage: bookStorage,
             settings: readerSettings
         )
     }
@@ -60,8 +65,8 @@ class DependencyContainer {
         return ReadingContentViewModel(displayOptions: displayOptions)
     }
     
-    func makeSpeedReadingViewModel(readingContentVM: ReadingContentViewModel) -> SpeedReadingViewModel {
-        return SpeedReadingViewModel(
+    func makeInlineHighlightViewModel(readingContentVM: ReadingContentViewModel) -> InlineHighlightViewModel {
+        return InlineHighlightViewModel(
             progressManager: readingProgressManager,
             readingContentVM: readingContentVM
         )

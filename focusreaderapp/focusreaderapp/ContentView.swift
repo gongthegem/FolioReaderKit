@@ -20,12 +20,10 @@ struct ContentView: View {
                 // Show the reader view
                 let container = DependencyContainer.shared
                 let readingContentVM = container.makeReadingContentViewModel()
-                let speedReadingVM = container.makeSpeedReadingViewModel(readingContentVM: readingContentVM)
                 
                 ReaderContainerView(
                     bookViewModel: bookViewModel,
-                    readingContentVM: readingContentVM,
-                    speedReadingVM: speedReadingVM
+                    readingContentVM: readingContentVM
                 )
             }
         }

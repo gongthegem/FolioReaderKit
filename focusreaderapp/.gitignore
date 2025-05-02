@@ -5,3 +5,74 @@ mermaidUMLGenerator/
 
 # Existing ignores below if any
 .DS_Store 
+
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, PrivateData/Xcode.gitignore,
+# and potentially Global/Swift.gitignore
+
+## User settings
+xcuserdata/
+*.xcuserdatad/
+
+## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
+*.xcscmblueprint
+*.xccheckout
+
+## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+project.pbxproj.pbxuser
+!project.pbxproj
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# build
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Bundle object file map
+*.mom
+*.momd
+
+# Other
+.DS_Store
+profile.raw
+
+# Swift Package Manager
+#
+# Add this line if you want to avoid checking in source code from Swift Package Manager dependencies.
+# Packages/
+.build/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/
+
+# Log files
+*.log
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Secrets
+.env*
+
+# IDE specific
+.idea/
+.vscode/
+
+# Cursor
+.cursor-cache/
+
+# Build logs
+build.log
+
+# Workspace settings
+**/xcshareddata/WorkspaceSettings.xcsettings 

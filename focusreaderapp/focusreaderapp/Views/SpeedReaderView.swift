@@ -149,6 +149,9 @@ struct SpeedReaderView: View {
             if speedReadingVM.isPlaying {
                 speedReadingVM.togglePlayback()
             }
+            
+            // Make sure to save the final position
+            speedReadingVM.saveProgress()
         }
     }
     

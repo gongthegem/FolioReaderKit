@@ -5,12 +5,12 @@ import Combine
 class BookViewModel: ObservableObject {
     private let epubService: EPUBService
     private let progressManager: ReadingProgressManager
+    private let bookStorage: BookStorageService
     
     @Published var currentBook: Book?
     @Published var library: [Book] = []
     @Published var currentChapterIndex: Int = 0
     @Published var settings: ReaderSettings
-    @Published var speedReadingMode: SpeedReaderMode?
     @Published var currentChapterContent: ProcessedChapter?
     @Published var isLoading: Bool = false
     
@@ -20,9 +20,10 @@ class BookViewModel: ObservableObject {
     private let fileManager = FileManager.default
     private var cancellables = Set<AnyCancellable>()
     
-    init(epubService: EPUBService, progressManager: ReadingProgressManager, settings: ReaderSettings = ReaderSettings()) {
+    init(epubService: EPUBService, progressManager: ReadingProgressManager, bookStorage: BookStorageService, settings: ReaderSettings = ReaderSettings()) {
         self.epubService = epubService
         self.progressManager = progressManager
+        self.bookStorage = bookStorage
         self.settings = settings
         
         // Load saved settings
@@ -42,28 +43,18 @@ class BookViewModel: ObservableObject {
         isLoading = true
         loadingError = nil
         
-        // Create a local copy of the file first
         do {
-            let documentsDirectory = try fileManager.url(
-                for: .documentDirectory,
-                in: .userDomainMask,
-                appropriateFor: nil,
-                create: true
-            )
-            
-            let destinationURL = documentsDirectory.appendingPathComponent(url.lastPathComponent)
-            
-            // Only copy if it doesn't already exist
-            if !fileManager.fileExists(atPath: destinationURL.path) {
-                try fileManager.copyItem(at: url, to: destinationURL)
-            }
-            
             // Parse the book
-            if let book = epubService.parseEPUB(at: destinationURL) {
+            if let book = epubService.parseEPUB(at: url) {
+                // Save to book storage if not already there
+                if !bookStorage.hasExtractedBook(id: book.id.uuidString) {
+                    try bookStorage.saveExtractedBook(from: url, withId: book.id.uuidString)
+                    try bookStorage.saveBookMetadata(book)
+                }
+                
                 // Add to library if not already there
-                if !library.contains(where: { $0.filePath == book.filePath }) {
+                if !library.contains(where: { $0.id == book.id }) {
                     library.append(book)
-                    saveLibrary()
                 }
                 
                 // Load the book
@@ -102,6 +93,12 @@ class BookViewModel: ObservableObject {
             return
         }
         
+        // Save current chapter position before switching
+        if let currentSentenceIndex = currentChapterContent?.sentences.count ?? 0 > 0 ? 
+            getCurrentSentenceIndex() : nil {
+            updateChapterPosition(currentChapterIndex, sentenceIndex: currentSentenceIndex)
+        }
+        
         currentChapterIndex = index
         let chapter = book.chapters[index]
         
@@ -113,9 +110,16 @@ class BookViewModel: ObservableObject {
         
         currentChapterContent = processedChapter
         
-        // If there's a last position, we'll need to highlight that sentence
-        if let position = book.lastReadPosition, position.chapterIndex == index {
-            // The reading content view will handle highlighting the sentence
+        // If there's a saved position for this chapter, restore it
+        if let position = book.lastReadPosition {
+            let sentenceIndex = position.sentenceIndexForChapter(index)
+            
+            // Update the reading content view
+            NotificationCenter.default.post(
+                name: Notification.Name("RestoreSentencePosition"),
+                object: nil,
+                userInfo: ["sentenceIndex": sentenceIndex]
+            )
         }
         
         isLoading = false
@@ -123,6 +127,58 @@ class BookViewModel: ObservableObject {
     
     func navigateToChapter(index: Int) {
         loadChapter(at: index)
+    }
+    
+    // Helper to get current sentence index from reader
+    private func getCurrentSentenceIndex() -> Int {
+        // Try to get from notification center or other means
+        // This is a placeholder - implement based on how your app tracks the current sentence
+        if let book = currentBook, let position = book.lastReadPosition, 
+           position.chapterIndex == currentChapterIndex {
+            return position.sentenceIndex
+        }
+        return 0
+    }
+    
+    // MARK: - Reading Position
+    
+    func saveReadingPosition(chapterIndex: Int, sentenceIndex: Int, displayMode: ReaderDisplayMode) {
+        updateChapterPosition(chapterIndex, sentenceIndex: sentenceIndex, displayMode: displayMode)
+    }
+    
+    private func updateChapterPosition(_ chapter: Int, sentenceIndex: Int, displayMode: ReaderDisplayMode? = nil) {
+        guard var book = currentBook else { return }
+        
+        // If we don't have a position yet, create one
+        if book.lastReadPosition == nil {
+            book.lastReadPosition = ReadingPosition(
+                chapterIndex: chapter,
+                sentenceIndex: sentenceIndex,
+                displayMode: displayMode
+            )
+        } else {
+            // Update the existing position
+            var position = book.lastReadPosition!
+            position.updateChapterPosition(chapter: chapter, sentence: sentenceIndex)
+            position.displayMode = displayMode
+            book.lastReadPosition = position
+        }
+        
+        // Update in memory
+        currentBook = book
+        
+        // Update in library
+        if let index = library.firstIndex(where: { $0.id == book.id }) {
+            library[index] = book
+            
+            // Save updated book metadata
+            try? bookStorage.saveBookMetadata(book)
+        }
+        
+        // Save to progress manager
+        if let position = book.lastReadPosition {
+            progressManager.saveProgress(bookId: book.id.uuidString, position: position)
+        }
     }
     
     func navigateToNextChapter() {
@@ -142,35 +198,30 @@ class BookViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Reading Position
-    
-    func saveReadingPosition(chapterIndex: Int, sentenceIndex: Int) {
-        guard var book = currentBook else { return }
-        
-        let position = ReadingPosition(
-            chapterIndex: chapterIndex,
-            sentenceIndex: sentenceIndex,
-            lastReadDate: Date()
-        )
-        
-        book.lastReadPosition = position
-        currentBook = book
-        
-        // Update the book in the library
-        if let index = library.firstIndex(where: { $0.id == book.id }) {
-            library[index] = book
-        }
-        
-        // Save the progress
-        progressManager.saveProgress(bookId: book.id.uuidString, position: position)
-        
-        // Save library
-        saveLibrary()
-    }
-    
     // MARK: - Library Management
     
+    func exitToLibrary() {
+        // Save current reading position if needed
+        if let currentSentenceIndex = currentChapterContent?.sentences.count ?? 0 > 0 ? 
+            getCurrentSentenceIndex() : nil {
+            saveReadingPosition(chapterIndex: currentChapterIndex, sentenceIndex: currentSentenceIndex, displayMode: .standard)
+        }
+        
+        // Clear current book to return to library view
+        self.currentBook = nil
+    }
+    
     func loadLibrary() {
+        // Load books from storage service
+        library = bookStorage.getAllSavedBooks()
+        
+        // If no books loaded from storage, try legacy method
+        if library.isEmpty {
+            loadLegacyLibrary()
+        }
+    }
+    
+    private func loadLegacyLibrary() {
         guard let libraryData = UserDefaults.standard.data(forKey: "library") else {
             return
         }
@@ -179,24 +230,20 @@ class BookViewModel: ObservableObject {
             let decoder = JSONDecoder()
             let loadedLibrary = try decoder.decode([String: Book].self, from: libraryData)
             library = Array(loadedLibrary.values)
+            
+            // Migrate to new storage
+            for book in library {
+                try? bookStorage.saveBookMetadata(book)
+            }
         } catch {
-            print("Error loading library: \(error)")
+            print("Error loading legacy library: \(error)")
         }
     }
     
     func saveLibrary() {
-        do {
-            var libraryDict = [String: Book]()
-            
-            for book in library {
-                libraryDict[book.id.uuidString] = book
-            }
-            
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(libraryDict)
-            UserDefaults.standard.set(data, forKey: "library")
-        } catch {
-            print("Error saving library: \(error)")
+        // Save each book to storage
+        for book in library {
+            try? bookStorage.saveBookMetadata(book)
         }
     }
     

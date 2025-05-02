@@ -2,6 +2,17 @@ import Foundation
 import SwiftUI
 import Combine
 
+enum ReaderDisplayMode: String, Codable {
+    case standard
+    case inlineHighlightReading
+}
+
+enum HighlightMode: String, Codable {
+    case none
+    case inlineSentence
+    case paragraph
+}
+
 class ReadingContentViewModel: ObservableObject {
     private let contentProcessor = ContentProcessor.shared
     
@@ -10,11 +21,34 @@ class ReadingContentViewModel: ObservableObject {
     @Published var displayOptions: ContentDisplayOptions
     @Published var currentSentenceIndex: Int = 0
     @Published var isLoading: Bool = false
+    @Published var readerDisplayMode: ReaderDisplayMode = .standard
     
     private var cancellables = Set<AnyCancellable>()
     
     init(displayOptions: ContentDisplayOptions = ContentDisplayOptions()) {
         self.displayOptions = displayOptions
+        
+        // Register for sentence position restoration notifications
+        NotificationCenter.default.addObserver(
+            self, 
+            selector: #selector(handleRestoreSentencePosition(_:)),
+            name: Notification.Name("RestoreSentencePosition"),
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func handleRestoreSentencePosition(_ notification: Notification) {
+        if let userInfo = notification.userInfo,
+           let sentenceIndex = userInfo["sentenceIndex"] as? Int {
+            // Move to the specified sentence
+            DispatchQueue.main.async {
+                self.moveToSentence(index: sentenceIndex)
+            }
+        }
     }
     
     func loadChapter(chapter: Chapter, options: ContentDisplayOptions) {
@@ -43,6 +77,22 @@ class ReadingContentViewModel: ObservableObject {
             )
             processedChapter = processed
         }
+    }
+    
+    func setDisplayMode(_ mode: ReaderDisplayMode) {
+        readerDisplayMode = mode
+        
+        // Update highlight mode based on display mode
+        var options = displayOptions
+        switch mode {
+        case .standard:
+            options.highlightMode = .none
+        case .inlineHighlightReading:
+            options.highlightMode = .inlineSentence
+            options.highlightedSentenceIndex = currentSentenceIndex
+        }
+        
+        updateDisplayOptions(options: options)
     }
     
     func generateHTMLForCurrentSentence(sentenceIndex: Int) -> String {
@@ -116,11 +166,24 @@ class ReadingContentViewModel: ObservableObject {
         }
         
         currentSentenceIndex = index
+        
+        // If in inline highlight mode, update the highlight
+        if readerDisplayMode == .inlineHighlightReading {
+            var options = displayOptions
+            options.highlightedSentenceIndex = index
+            displayOptions = options
+        }
+        
         return true
     }
     
     // Helper method to get the total number of sentences in the current chapter
     var totalSentences: Int {
         return processedChapter?.sentences.count ?? 0
+    }
+    
+    // Save progress for the current book
+    func saveProgress(bookId: String) {
+        // Implementation would depend on your ReadingProgressManager
     }
 } 
