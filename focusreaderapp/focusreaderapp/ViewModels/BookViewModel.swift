@@ -327,7 +327,7 @@ class BookViewModel: ObservableObject {
     
     func saveLibrary() {
         // Save each book to storage
-        for book in library {
+            for book in library {
             try? bookStorage.saveBookMetadata(book)
         }
     }

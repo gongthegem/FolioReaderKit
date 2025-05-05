@@ -10,12 +10,12 @@ struct ReaderContainerView: View {
     var body: some View {
         ZStack {
             UnifiedReaderView(
-                bookViewModel: bookViewModel,
-                readingContentVM: readingContentVM,
-                onShowSettings: { showSettings = true },
-                onShowTOC: { showTOC = true },
+                    bookViewModel: bookViewModel,
+                    readingContentVM: readingContentVM,
+                    onShowSettings: { showSettings = true },
+                    onShowTOC: { showTOC = true },
                 onExitToLibrary: { bookViewModel.exitToLibrary() }
-            )
+                )
             
             // Overlays
             if showSettings {

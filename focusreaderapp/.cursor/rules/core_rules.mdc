@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Core architectural principles for Mermaid UML Generator
+globs: ["**/*.{ts,tsx,js,jsx}"]
+alwaysApply: true
+---
+
+1. ARCHITECTURE AND DOCUMENTATION
+   • Follow layered architecture from /mermaid_class_diagram  documentation 
+   • When extending the system, update corresponding /mermaid_class_diagram  documentation first
+   • Maintain proper dependency direction 
+   • Document public interfaces and complex logic with comments

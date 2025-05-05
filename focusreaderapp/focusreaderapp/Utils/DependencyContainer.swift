@@ -7,6 +7,10 @@ class DependencyContainer {
     
     // MARK: - Services
     
+    lazy var epubResourceManager: EPUBResourceManager = {
+        return DefaultEPUBResourceManager()
+    }()
+    
     lazy var epubService: EPUBService = {
         let zipService = DefaultEPUBZipService()
         let extractorService = DefaultEPUBExtractorService(zipService: zipService)
@@ -14,6 +18,7 @@ class DependencyContainer {
         let metadataParserService = DefaultEPUBMetadataParserService()
         let tocParserService = DefaultTOCParsingService()
         let spineService = DefaultEPUBSpineService()
+        let resourceManager = epubResourceManager
         
         print("Creating EPUBService with all dependencies initialized")
         print("- zipService: \(zipService)")
@@ -22,6 +27,7 @@ class DependencyContainer {
         print("- metadataParserService: \(metadataParserService)")
         print("- tocParserService: \(tocParserService)")
         print("- spineService: \(spineService)")
+        print("- resourceManager: \(resourceManager)")
         
         return DefaultEPUBService(
             extractor: extractorService,
@@ -29,7 +35,8 @@ class DependencyContainer {
             tocParser: tocParserService,
             pathResolver: pathResolverService,
             spineService: spineService,
-            zipService: zipService
+            zipService: zipService,
+            resourceManager: resourceManager
         )
     }()
     

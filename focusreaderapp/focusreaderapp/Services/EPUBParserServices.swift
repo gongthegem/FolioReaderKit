@@ -1,5 +1,101 @@
 import Foundation
 
+// MARK: - EPUB Resource Manager
+protocol EPUBResourceManager {
+    func registerResource(id: String, url: URL, mediaType: String)
+    func getResourceURL(id: String) -> URL?
+    func getResourceURL(href: String, relativeTo: URL) -> URL?
+    func resolveManifestResources(from opfURL: URL) -> [String: URL]
+    func getResourceMediaType(id: String) -> String?
+    func getAllResources() -> [String: URL]
+}
+
+class DefaultEPUBResourceManager: EPUBResourceManager {
+    private var resources: [String: (url: URL, mediaType: String)] = [:]
+    private var baseURL: URL?
+    
+    func registerResource(id: String, url: URL, mediaType: String) {
+        resources[id] = (url: url, mediaType: mediaType)
+    }
+    
+    func getResourceURL(id: String) -> URL? {
+        return resources[id]?.url
+    }
+    
+    func getResourceURL(href: String, relativeTo: URL) -> URL? {
+        // First check if we have an ID matching this href
+        if let resource = resources.first(where: { $0.value.url.lastPathComponent == href }) {
+            return resource.value.url
+        }
+        
+        // Otherwise construct a URL relative to the base
+        return URL(string: href, relativeTo: relativeTo)
+    }
+    
+    func getResourceMediaType(id: String) -> String? {
+        return resources[id]?.mediaType
+    }
+    
+    func getAllResources() -> [String: URL] {
+        return resources.mapValues { $0.url }
+    }
+    
+    func resolveManifestResources(from opfURL: URL) -> [String: URL] {
+        guard let opfData = try? Data(contentsOf: opfURL),
+              let xmlString = String(data: opfData, encoding: .utf8) else {
+            print("❌ Failed to read OPF file for manifest resources")
+            return [:]
+        }
+        
+        self.baseURL = opfURL.deletingLastPathComponent()
+        var foundResources: [String: URL] = [:]
+        
+        // Look for item elements in the manifest
+        let manifestPattern = #"<manifest[^>]*>(.*?)</manifest>"#
+        if let manifestRange = xmlString.range(of: manifestPattern, options: .regularExpression) {
+            let manifestContent = String(xmlString[manifestRange])
+            
+            // Find all item elements
+            let itemPattern = #"<item([^>]*)>"#
+            let itemMatches = manifestContent.matches(of: try! Regex(itemPattern))
+            
+            for match in itemMatches {
+                let itemAttributes = String(match.0)
+                
+                // Extract id, href and media-type
+                if let idMatch = itemAttributes.range(of: #"id="([^"]*)"#, options: .regularExpression),
+                   let hrefMatch = itemAttributes.range(of: #"href="([^"]*)"#, options: .regularExpression),
+                   let mediaTypeMatch = itemAttributes.range(of: #"media-type="([^"]*)"#, options: .regularExpression) {
+                    
+                    // Extract values from attributes
+                    var id = String(itemAttributes[idMatch])
+                    id = id.replacingOccurrences(of: "id=\"", with: "").replacingOccurrences(of: "\"", with: "")
+                    
+                    var href = String(itemAttributes[hrefMatch])
+                    href = href.replacingOccurrences(of: "href=\"", with: "").replacingOccurrences(of: "\"", with: "")
+                    
+                    var mediaType = String(itemAttributes[mediaTypeMatch])
+                    mediaType = mediaType.replacingOccurrences(of: "media-type=\"", with: "").replacingOccurrences(of: "\"", with: "")
+                    
+                    // Create URL for resource
+                    if let baseURL = baseURL {
+                        let resourceURL = baseURL.appendingPathComponent(href)
+                        registerResource(id: id, url: resourceURL, mediaType: mediaType)
+                        foundResources[id] = resourceURL
+                    }
+                }
+            }
+        }
+        
+        print("📚 Registered \(resources.count) resources from manifest")
+        resources.forEach { id, resource in
+            print("  - Resource: \(id), URL: \(resource.url.path), Type: \(resource.mediaType)")
+        }
+        
+        return foundResources
+    }
+}
+
 // MARK: - Path Resolver Service Implementation
 class DefaultPathResolverService: PathResolverService {
     private let fileManager = FileManager.default
@@ -232,7 +328,7 @@ class DefaultTOCParsingService: TOCParsingService {
         let pattern = #"<navPoint[^>]*id="([^"]+)".*?>\s*<navLabel.*?>\s*<text.*?>(.*?)</text>.*?<content[^>]*src="([^"]+)"[^>]*/?>"#
         
         do {
-            let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
             let matches = regex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
             
             print("NCX regex found \(matches.count) matches")
@@ -364,101 +460,133 @@ class DefaultTOCParsingService: TOCParsingService {
 
 // MARK: - Spine Service Implementation
 class DefaultEPUBSpineService: EPUBSpineService {
+    private var resourceManager: EPUBResourceManager?
+    
     func getSpineItems(from opfURL: URL) -> [URL] {
         guard let opfData = try? Data(contentsOf: opfURL),
               let xmlString = String(data: opfData, encoding: .utf8) else {
-            print("Failed to read OPF file for spine items")
+            print("❌ Failed to read OPF file for spine items")
             return []
         }
         
-        var spineItems: [URL] = []
-        let baseDir = opfURL.deletingLastPathComponent()
+        // Create and initialize the resource manager
+        let resourceManager = DefaultEPUBResourceManager()
+        let resources = resourceManager.resolveManifestResources(from: opfURL)
+        self.resourceManager = resourceManager
         
-        do {
-            print("Getting spine items from OPF at \(opfURL.path)")
+        print("\n======== 📖 SPINE EXTRACTION PROCESS ========")
+        print("Base directory: \(opfURL.deletingLastPathComponent().path)")
             
-            // Find spine itemrefs
-            let itemRefPattern = #"<itemref[^>]*idref="([^"]+)"[^>]*/?>"#
-            let itemRefRegex = try NSRegularExpression(pattern: itemRefPattern, options: [])
-            let itemRefMatches = itemRefRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+        // First get the spine element
+        let spineItems: [URL] = []
+        var itemrefs: [(idref: String, linear: Bool)] = []
+        
+        // Extract spine items references
+        let spinePattern = #"<spine[^>]*>(.*?)</spine>"#
+        if let spineRange = xmlString.range(of: spinePattern, options: [.regularExpression]) {
+            let spineContent = String(xmlString[spineRange])
+            print("Found spine element: \(spineContent.prefix(50))...")
             
-            print("Found \(itemRefMatches.count) itemref elements in spine")
+            // Extract all itemref elements
+            let itemrefPattern = #"<itemref([^>]*)/?>"#
+            let itemrefMatches = spineContent.matches(of: try! Regex(itemrefPattern))
             
-            // Extract each ID reference from the spine
-            var idRefs: [String] = []
-            for match in itemRefMatches {
-                if let idRefRange = Range(match.range(at: 1), in: xmlString) {
-                    let idRef = String(xmlString[idRefRange])
-                    idRefs.append(idRef)
-                    print("Found spine item idref: \(idRef)")
-                }
-            }
-            
-            // Find the corresponding item with href for each id reference
-            for idRef in idRefs {
-                let itemPattern = #"<item[^>]*id="\#(idRef)"[^>]*href="([^"]+)"[^>]*/?>"#
-                let itemRegex = try NSRegularExpression(pattern: itemPattern, options: [])
-                let itemMatches = itemRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
+            for match in itemrefMatches {
+                let itemrefAttributes = String(match.0)
                 
-                if let itemMatch = itemMatches.first,
-                   let hrefRange = Range(itemMatch.range(at: 1), in: xmlString) {
-                    let href = String(xmlString[hrefRange])
-                    let chapterURL = baseDir.appendingPathComponent(href)
+                // Extract idref attribute
+                if let idrefMatch = itemrefAttributes.range(of: #"idref="([^"]*)"#, options: .regularExpression) {
+                    var idref = String(itemrefAttributes[idrefMatch])
+                    idref = idref.replacingOccurrences(of: "idref=\"", with: "").replacingOccurrences(of: "\"", with: "")
+                
+                    // Check if item is linear (default is true)
+                    var linear = true
+                    if let linearMatch = itemrefAttributes.range(of: #"linear="([^"]*)"#, options: .regularExpression) {
+                        let linearValue = String(itemrefAttributes[linearMatch])
+                            .replacingOccurrences(of: "linear=\"", with: "")
+                            .replacingOccurrences(of: "\"", with: "")
+                        linear = linearValue != "no"
+                    }
                     
-                    // Verify file exists before adding
-                    if FileManager.default.fileExists(atPath: chapterURL.path) {
-                        print("Found chapter file: \(chapterURL.path)")
-                        spineItems.append(chapterURL)
+                    itemrefs.append((idref: idref, linear: linear))
+                }
+            }
                     } else {
-                        print("Warning: Chapter file does not exist: \(chapterURL.path)")
+            print("❌ No spine element found in OPF file")
+        }
+        
+        // Convert itemrefs to URLs using the resource manager
+        var spineURLs: [URL] = []
+        
+        print("\n📚 Found \(itemrefs.count) spine items (itemrefs):")
+        for (index, itemref) in itemrefs.enumerated() {
+            print("  📄 Spine item \(index): idref=\(itemref.idref), linear=\(itemref.linear)")
+            if let resourceURL = resourceManager.getResourceURL(id: itemref.idref) {
+                print("    ✅ Resolved to: \(resourceURL.path)")
+                if FileManager.default.fileExists(atPath: resourceURL.path) {
+                    print("    ✅ File exists at path")
+                    spineURLs.append(resourceURL)
+                } else {
+                    print("    ❌ File does not exist at resolved path")
+                }
+            } else {
+                print("    ❌ Could not resolve resource URL for idref: \(itemref.idref)")
+            }
+        }
+        
+        // Fallback: If no spine items were found, try to find XHTML files in the package
+        if spineURLs.isEmpty {
+            print("\n⚠️ No spine items found using spine element, trying fallback methods...")
+            
+            // Try to find all HTML/XHTML resources in the manifest
+            let htmlResources = resources.filter { id, _ in 
+                let mediaType = resourceManager.getResourceMediaType(id: id) ?? ""
+                return mediaType.contains("html") || mediaType.contains("xhtml")
+            }
+            
+            if !htmlResources.isEmpty {
+                print("✅ Found \(htmlResources.count) HTML resources in manifest")
+                spineURLs = Array(htmlResources.values)
+                    .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+                    } else {
+                print("❌ No HTML resources found in manifest")
+                        
+                // Last resort: Directory scan for HTML/XHTML files
+                let baseDir = opfURL.deletingLastPathComponent()
+                print("🔍 Scanning directory for HTML/XHTML files: \(baseDir.path)")
+                        
+                if let contents = try? FileManager.default.contentsOfDirectory(at: baseDir, includingPropertiesForKeys: nil) {
+                    let htmlFiles = contents.filter { 
+                        $0.pathExtension.lowercased() == "html" || 
+                        $0.pathExtension.lowercased() == "xhtml" || 
+                        $0.pathExtension.lowercased() == "htm"
+                    }
+                    
+                    if !htmlFiles.isEmpty {
+                        print("✅ Found \(htmlFiles.count) HTML files by scanning directory")
+                        spineURLs = htmlFiles.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+                        }
                     }
                 }
             }
             
-            print("Successfully found \(spineItems.count) spine items")
-            
-            // If we didn't find any spine items, fall back to using the manifest items
-            if spineItems.isEmpty {
-                print("No spine items found, falling back to manifest items")
-                spineItems = fallbackToManifestItems(opfURL: opfURL, xmlString: xmlString)
+        if spineURLs.isEmpty {
+            print("❌ Could not find any spine items using any method")
+        } else {
+            print("\n📚 Final spine items list (\(spineURLs.count) items):")
+            for (index, url) in spineURLs.enumerated() {
+                print("  \(index): \(url.path)")
             }
-        } catch {
-            print("Error getting spine items: \(error)")
         }
         
-        return spineItems
-    }
-    
-    private func fallbackToManifestItems(opfURL: URL, xmlString: String) -> [URL] {
-        var manifestItems: [URL] = []
-        let baseDir = opfURL.deletingLastPathComponent()
-        
-        do {
-            // Look for XHTML items in the manifest
-            let manifestPattern = #"<item[^>]*href="([^"]+)"[^>]*media-type="application/xhtml\+xml"[^>]*/?>"#
-            let manifestRegex = try NSRegularExpression(pattern: manifestPattern, options: [])
-            let manifestMatches = manifestRegex.matches(in: xmlString, options: [], range: NSRange(xmlString.startIndex..., in: xmlString))
-            
-            print("Found \(manifestMatches.count) XHTML items in manifest")
-            
-            for match in manifestMatches {
-                if let hrefRange = Range(match.range(at: 1), in: xmlString) {
-                    let href = String(xmlString[hrefRange])
-                    let itemURL = baseDir.appendingPathComponent(href)
-                    
-                    // Verify file exists before adding
-                    if FileManager.default.fileExists(atPath: itemURL.path) {
-                        print("Found manifest item file: \(itemURL.path)")
-                        manifestItems.append(itemURL)
-                    } else {
-                        print("Warning: Manifest item file does not exist: \(itemURL.path)")
-                    }
+        return spineURLs
                 }
             }
-        } catch {
-            print("Error finding manifest items: \(error)")
+            
+// Extension to make code cleaner
+extension String {
+    var deletingPathExtension: String {
+        (self as NSString).deletingPathExtension
         }
-        
-        return manifestItems
     }
-} 
+

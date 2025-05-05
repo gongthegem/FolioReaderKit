@@ -75,4 +75,4 @@ playground.xcworkspace
 build.log
 
 # Workspace settings
-**/xcshareddata/WorkspaceSettings.xcsettings 
+**/xcshareddata/WorkspaceSettings.xcsettings temp_extract/
